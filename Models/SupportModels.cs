@@ -20,6 +20,13 @@ public sealed class SettingsFile
 
 public sealed record InstructionItem(int Number, string Text);
 
+public sealed record DownloadHistoryItem(
+    string Title,
+    string Version,
+    string DateLabel,
+    string FilePath,
+    bool FileExists);
+
 public sealed class ChangelogItem
 {
     public ChangelogItem(ChangelogEntry entry, bool isLast)

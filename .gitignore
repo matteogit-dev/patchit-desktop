@@ -4,6 +4,9 @@ obj/
 release/
 *.user
 
+# Note interne (non pubblicate)
+*.local.md
+
 # IDE
 .vs/
 .vscode/

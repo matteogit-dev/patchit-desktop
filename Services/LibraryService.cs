@@ -31,6 +31,25 @@ public sealed class LibraryService
     public string? GetVersion(string id) =>
         _entries.TryGetValue(id, out var entry) ? entry.Version : null;
 
+    public IReadOnlyList<LocalEntry> GetAll() =>
+        _entries.Values
+            .OrderByDescending(e => e.DownloadedAt, StringComparer.Ordinal)
+            .ToList();
+
+    public void Clear()
+    {
+        _entries.Clear();
+
+        try
+        {
+            if (File.Exists(AppPaths.Library)) File.Delete(AppPaths.Library);
+        }
+        catch
+        {
+            // file non eliminabile: la prossima Save lo sovrascriverà
+        }
+    }
+
     public void Save(string id, string version, string filePath)
     {
         _entries[id] = new LocalEntry

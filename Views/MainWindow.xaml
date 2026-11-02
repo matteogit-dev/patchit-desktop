@@ -1,11 +1,11 @@
-<Window x:Class="PatchIt.Client.Views.MainWindow"
+﻿<Window x:Class="PatchIt.Client.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:PatchIt.Client.ViewModels"
         xmlns:views="clr-namespace:PatchIt.Client.Views"
         Title="PatchIT — Libreria traduzioni"
-        Width="1280" Height="840"
-        MinWidth="1000" MinHeight="660"
+        Width="1320" Height="860"
+        MinWidth="1040" MinHeight="680"
         WindowStartupLocation="CenterScreen"
         Icon="/PatchIT;component/Assets/logo.png"
         Background="{StaticResource WindowBgBrush}"
@@ -19,7 +19,7 @@
     </Window.DataContext>
 
     <Grid>
-        <!-- ==================== Libreria ==================== -->
+        <!-- ==================== Shell ==================== -->
         <Grid x:Name="LibraryRoot">
             <Grid.Style>
                 <Style TargetType="Grid">
@@ -35,180 +35,297 @@
                 </Style>
             </Grid.Style>
 
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="272"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-            <!-- Header -->
-            <Border Grid.Row="0" Padding="34,24,34,0">
-                <StackPanel>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+            <!-- ========== Rail laterale ========== -->
+            <Border Grid.Column="0"
+                    Background="{StaticResource SurfaceBrush}"
+                    BorderBrush="{StaticResource LineSoftBrush}"
+                    BorderThickness="0,0,1,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                        <!-- Brand -->
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Image Source="/PatchIT;component/Assets/logo.png"
-                                   Width="32" Height="32" Margin="0,0,12,0"
-                                   RenderOptions.BitmapScalingMode="HighQuality"/>
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="PatchIT" FontSize="19" FontWeight="SemiBold"
-                                           FontFamily="{StaticResource DisplayFont}"/>
-                                <TextBlock Text="Libreria traduzioni" FontSize="11.5"
-                                           Foreground="{StaticResource MutedSoftBrush}"/>
-                            </StackPanel>
+                    <!-- Brand -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="22,24,22,20">
+                        <Image Source="/PatchIT;component/Assets/logo.png"
+                               Width="34" Height="34" Margin="0,0,12,0"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="PatchIT" FontSize="19" FontWeight="SemiBold"
+                                       FontFamily="{StaticResource DisplayFont}"/>
+                            <TextBlock Text="Libreria traduzioni" FontSize="11.5"
+                                       Foreground="{StaticResource MutedSoftBrush}"/>
                         </StackPanel>
+                    </StackPanel>
 
-                        <!-- Ricerca -->
-                        <TextBox Grid.Column="1"
-                                 Style="{StaticResource SearchBox}"
-                                 Width="440" Height="42"
-                                 HorizontalAlignment="Center"
-                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"/>
+                    <!-- Nav + filtri -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="14,0,14,16">
 
-                        <!-- Contatori -->
-                        <StackPanel Grid.Column="2" Orientation="Horizontal"
-                                    HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <Border Margin="0,0,10,0" Padding="11,6" CornerRadius="999"
-                                    Background="{StaticResource AmberDimBrush}"
-                                    Visibility="{Binding UpdateCount, Converter={StaticResource CountToVis}}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="▲" FontSize="9" Foreground="{StaticResource AmberBrush}"
-                                               Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                    <TextBlock FontSize="12" FontWeight="SemiBold"
-                                               Foreground="{StaticResource AmberBrush}">
-                                        <Run Text="{Binding UpdateCount, Mode=OneWay}"/>
-                                        <Run Text=" aggiornamenti"/>
-                                    </TextBlock>
-                                </StackPanel>
-                            </Border>
-                            <TextBlock VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}" FontSize="12.5">
-                                <Run Text="{Binding GameCount, Mode=OneWay}"/><Run Text=" titoli"/>
-                            </TextBlock>
-                        </StackPanel>
-                    </Grid>
+                            <TextBlock Text="NAVIGAZIONE" FontSize="10.5" FontWeight="SemiBold"
+                                       Foreground="{StaticResource MutedSoftBrush}"
+                                       Margin="11,0,0,8"/>
 
-                    <!-- Filtri -->
-                    <DockPanel Margin="0,20,0,0" LastChildFill="False">
-                        <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
-                            <Button Style="{StaticResource PillButton}" Tag="all"
-                                    Content="Tutti" Command="{Binding SetFilterCommand}" CommandParameter="all"/>
-                            <Button Style="{StaticResource PillButton}" Tag="complete"
-                                    Content="Completate" Command="{Binding SetFilterCommand}" CommandParameter="complete"/>
-                            <Button Style="{StaticResource PillButton}" Tag="progress"
-                                    Content="In corso" Command="{Binding SetFilterCommand}" CommandParameter="progress"/>
-                            <Button Style="{StaticResource PillButton}" Tag="paused"
-                                    Content="In pausa" Command="{Binding SetFilterCommand}" CommandParameter="paused"/>
-                            <Button Style="{StaticResource PillButton}" Tag="planned"
-                                    Content="Pianificate" Command="{Binding SetFilterCommand}" CommandParameter="planned"/>
-                        </StackPanel>
-                    </DockPanel>
+                            <Button Style="{StaticResource NavButton}" Tag="library" AutomationProperties.Name="Libreria"
+                                    Command="{Binding NavigateCommand}" CommandParameter="library">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="&#xE8F1;" FontFamily="{StaticResource IconFont}"
+                                               FontSize="15" VerticalAlignment="Center"
+                                               Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                    <TextBlock Grid.Column="1" Text="Libreria" Margin="12,0,0,0"
+                                               VerticalAlignment="Center"
+                                               Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                </Grid>
+                            </Button>
 
-                    <Border Height="1" Margin="0,20,0,0" Background="{StaticResource LineSoftBrush}"/>
-                </StackPanel>
-            </Border>
-
-            <!-- Corpo -->
-            <Grid Grid.Row="1">
-                <!-- Loading -->
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
-                            Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
-                    <ProgressBar IsIndeterminate="True" Width="170" Height="5" Margin="0,0,0,14"/>
-                    <TextBlock Text="Caricamento libreria…" Foreground="{StaticResource MutedBrush}"/>
-                </StackPanel>
-
-                <!-- Errore -->
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24"
-                            Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVis}}">
-                    <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource MutedBrush}"
-                               TextAlignment="Center" Margin="0,0,0,14"/>
-                    <Button Style="{StaticResource BtnGhost}" Content="Riprova"
-                            HorizontalAlignment="Center" Command="{Binding LoadCommand}"/>
-                </StackPanel>
-
-                <!-- Nessun risultato -->
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24"
-                            Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}">
-                    <Border Width="64" Height="64" CornerRadius="20"
-                            Background="{StaticResource SurfaceBrush}"
-                            HorizontalAlignment="Center" Margin="0,0,0,18">
-                        <TextBlock Text="⌕" FontSize="30" Foreground="{StaticResource MutedSoftBrush}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                    <TextBlock Text="Nessun titolo trovato" FontSize="17" FontWeight="SemiBold"
-                               TextAlignment="Center"/>
-                    <TextBlock Text="Prova a cambiare ricerca o filtro." Margin="0,6,0,0" FontSize="13"
-                               Foreground="{StaticResource MutedBrush}" TextAlignment="Center"/>
-                </StackPanel>
-
-                <!-- Griglia della libreria -->
-                <ListBox ItemsSource="{Binding Games}"
-                         SelectedItem="{Binding SelectedGame, Mode=TwoWay}"
-                         Margin="34,24,20,26"
-                         Visibility="{Binding IsReady, Converter={StaticResource BoolToVis}}"
-                         PreviewMouseLeftButtonUp="GamesList_PreviewMouseLeftButtonUp"
-                         KeyDown="GamesList_KeyDown">
-                    <ListBox.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal"/>
-                        </ItemsPanelTemplate>
-                    </ListBox.ItemsPanel>
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel>
-                                <!-- Copertina -->
-                                <Grid Height="142">
-                                    <Border CornerRadius="12" Background="{StaticResource CoverFallbackBrush}">
-                                        <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold"
-                                                   Foreground="{StaticResource TextBrush}" Opacity="0.12"
-                                                   TextAlignment="Center" TextWrapping="Wrap"
-                                                   VerticalAlignment="Center" Margin="18"/>
-                                    </Border>
-
-                                    <Border CornerRadius="12">
-                                        <Border.Background>
-                                            <ImageBrush ImageSource="{Binding CoverPath}" Stretch="UniformToFill"/>
-                                        </Border.Background>
-                                    </Border>
-
-                                    <Border CornerRadius="12" Background="{StaticResource CoverFadeBrush}"/>
-
-                                    <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10"
-                                            Padding="9,3" CornerRadius="999"
-                                            Background="{Binding StatusDimBrush}">
-                                        <TextBlock Text="{Binding StatusLabel}" FontSize="10.5"
-                                                   FontWeight="SemiBold" Foreground="{Binding StatusBrush}"/>
-                                    </Border>
-
-                                    <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10"
-                                            Padding="9,3" CornerRadius="999"
+                            <Button Style="{StaticResource NavButton}" Tag="updates" AutomationProperties.Name="Aggiornamenti"
+                                    Command="{Binding NavigateCommand}" CommandParameter="updates">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="&#xE895;" FontFamily="{StaticResource IconFont}"
+                                               FontSize="15" VerticalAlignment="Center"
+                                               Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                    <TextBlock Grid.Column="1" Text="Aggiornamenti" Margin="12,0,0,0"
+                                               VerticalAlignment="Center"
+                                               Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                    <Border Grid.Column="2" Padding="7,1" CornerRadius="999"
                                             Background="{StaticResource AmberDimBrush}"
-                                            Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVis}}">
-                                        <TextBlock Text="AGGIORNA" FontSize="10" FontWeight="SemiBold"
+                                            VerticalAlignment="Center"
+                                            Visibility="{Binding UpdateCount, Converter={StaticResource CountToVis}}">
+                                        <TextBlock Text="{Binding UpdateCount}" FontSize="10.5"
+                                                   FontWeight="SemiBold"
                                                    Foreground="{StaticResource AmberBrush}"/>
                                     </Border>
                                 </Grid>
+                            </Button>
 
-                                <!-- Titolo e meta -->
-                                <TextBlock Text="{Binding Title}" Margin="4,13,4,0"
-                                           FontSize="15" FontWeight="SemiBold" LineHeight="19"
-                                           TextTrimming="CharacterEllipsis" MaxHeight="38"/>
-                                <DockPanel Margin="4,7,4,0">
-                                    <TextBlock DockPanel.Dock="Right" FontSize="11.5"
-                                               Foreground="{StaticResource MutedSoftBrush}"
-                                               Text="{Binding UpdatedLabel}"
-                                               Visibility="{Binding HasUpdatedDate, Converter={StaticResource BoolToVis}}"/>
-                                    <TextBlock FontSize="11.5" Foreground="{StaticResource MutedBrush}"
-                                               Text="{Binding Version}"/>
-                                </DockPanel>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
+                            <Button Style="{StaticResource NavButton}" Tag="settings" AutomationProperties.Name="Impostazioni"
+                                    Command="{Binding NavigateCommand}" CommandParameter="settings">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="&#xE713;" FontFamily="{StaticResource IconFont}"
+                                               FontSize="15" VerticalAlignment="Center"
+                                               Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                    <TextBlock Grid.Column="1" Text="Impostazioni" Margin="12,0,0,0"
+                                               VerticalAlignment="Center"
+                                               Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                </Grid>
+                            </Button>
+
+                            <Border Height="1" Margin="10,18,10,16" Background="{StaticResource LineSoftBrush}"/>
+
+                            <TextBlock Text="FILTRI" FontSize="10.5" FontWeight="SemiBold"
+                                       Foreground="{StaticResource MutedSoftBrush}"
+                                       Margin="11,0,0,8"/>
+
+                            <ItemsControl ItemsSource="{Binding Filters}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Style="{StaticResource SidebarFilterButton}" AutomationProperties.Name="{Binding Label}"
+                                                Command="{Binding DataContext.SetFilterCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding Key}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Ellipse Grid.Column="0" Width="7" Height="7"
+                                                         Fill="{Binding Accent}" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding Label}" Margin="10,0,0,0"
+                                                           VerticalAlignment="Center"
+                                                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                                <TextBlock Grid.Column="2" Text="{Binding Count}" FontSize="11.5"
+                                                           VerticalAlignment="Center" Opacity="0.8"
+                                                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                            </Grid>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- Footer -->
+                    <Border Grid.Row="2" BorderBrush="{StaticResource LineSoftBrush}" BorderThickness="0,1,0,0"
+                            Padding="22,13">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding AppVersion}" FontSize="11"
+                                       Foreground="{StaticResource MutedSoftBrush}"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="PatchIT Desktop" FontSize="11"
+                                       Foreground="{StaticResource MutedSoftBrush}"
+                                       VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- ========== Contenuto ========== -->
+            <Grid Grid.Column="1">
+                <!-- Vista libreria / aggiornamenti -->
+                <Grid Visibility="{Binding IsLibraryVisible, Converter={StaticResource BoolToVis}}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Intestazione -->
+                    <Border Grid.Row="0" Padding="34,26,34,0">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding LibraryTitle}" FontSize="30"
+                                               FontWeight="SemiBold"
+                                               FontFamily="{StaticResource DisplayFont}"/>
+                                    <TextBlock Text="{Binding LibrarySubtitle}" FontSize="13"
+                                               Foreground="{StaticResource MutedBrush}" Margin="0,5,0,0"/>
+                                </StackPanel>
+
+                                <TextBox Grid.Column="1"
+                                         Style="{StaticResource SearchBox}"
+                                         Width="360" Height="42"
+                                         VerticalAlignment="Center"
+                                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"/>
+                            </Grid>
+
+                            <DockPanel Margin="0,18,0,0">
+                                <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center"
+                                           Foreground="{StaticResource MutedBrush}" FontSize="12.5">
+                                    <Run Text="{Binding GameCount, Mode=OneWay}"/><Run Text=" risultati"/>
+                                </TextBlock>
+                            </DockPanel>
+
+                            <Border Height="1" Margin="0,18,0,0" Background="{StaticResource LineSoftBrush}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Corpo -->
+                    <Grid Grid.Row="1">
+                        <!-- Loading -->
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                                    Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
+                            <ProgressBar IsIndeterminate="True" Width="170" Height="5" Margin="0,0,0,14"/>
+                            <TextBlock Text="Caricamento libreria…" Foreground="{StaticResource MutedBrush}"/>
+                        </StackPanel>
+
+                        <!-- Errore -->
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24"
+                                    Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVis}}">
+                            <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource MutedBrush}"
+                                       TextAlignment="Center" Margin="0,0,0,14"/>
+                            <Button Style="{StaticResource BtnGhost}" Content="Riprova"
+                                    HorizontalAlignment="Center" Command="{Binding LoadCommand}"/>
+                        </StackPanel>
+
+                        <!-- Nessun risultato -->
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24"
+                                    Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}">
+                            <Border Width="64" Height="64" CornerRadius="20"
+                                    Background="{StaticResource SurfaceBrush}"
+                                    HorizontalAlignment="Center" Margin="0,0,0,18">
+                                <TextBlock Text="⌕" FontSize="30" Foreground="{StaticResource MutedSoftBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Text="{Binding EmptyTitle}" FontSize="17" FontWeight="SemiBold"
+                                       TextAlignment="Center"/>
+                            <TextBlock Text="{Binding EmptyMessage}" Margin="0,6,0,0" FontSize="13"
+                                       Foreground="{StaticResource MutedBrush}" TextAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- Griglia -->
+                        <ListBox ItemsSource="{Binding Games}"
+                                 SelectedItem="{Binding SelectedGame, Mode=TwoWay}"
+                                 Margin="34,24,22,26"
+                                 Visibility="{Binding IsReady, Converter={StaticResource BoolToVis}}"
+                                 PreviewMouseLeftButtonUp="GamesList_PreviewMouseLeftButtonUp"
+                                 KeyDown="GamesList_KeyDown">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel>
+                                        <!-- Copertina -->
+                                        <Grid Height="124">
+                                            <Border CornerRadius="12" Background="{StaticResource CoverFallbackBrush}">
+                                                <TextBlock Text="{Binding Title}" FontSize="21" FontWeight="SemiBold"
+                                                           Foreground="{StaticResource TextBrush}" Opacity="0.12"
+                                                           TextAlignment="Center" TextWrapping="Wrap"
+                                                           VerticalAlignment="Center" Margin="16"/>
+                                            </Border>
+
+                                            <Border CornerRadius="12">
+                                                <Border.Background>
+                                                    <ImageBrush ImageSource="{Binding CoverPath}" Stretch="UniformToFill"/>
+                                                </Border.Background>
+                                            </Border>
+
+                                            <Border CornerRadius="12" Background="{StaticResource CoverFadeBrush}"/>
+
+                                            <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="9"
+                                                    Padding="8,3" CornerRadius="999"
+                                                    Background="{Binding StatusDimBrush}">
+                                                <TextBlock Text="{Binding StatusLabel}" FontSize="10"
+                                                           FontWeight="SemiBold" Foreground="{Binding StatusBrush}"/>
+                                            </Border>
+
+                                            <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="9"
+                                                    Padding="8,3" CornerRadius="999"
+                                                    Background="{StaticResource AmberDimBrush}"
+                                                    Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVis}}">
+                                                <TextBlock Text="AGGIORNA" FontSize="9.5" FontWeight="SemiBold"
+                                                           Foreground="{StaticResource AmberBrush}"/>
+                                            </Border>
+                                        </Grid>
+
+                                        <!-- Titolo e meta -->
+                                        <TextBlock Text="{Binding Title}" Margin="4,10,4,0"
+                                                   FontSize="14" FontWeight="SemiBold" LineHeight="18"
+                                                   TextWrapping="Wrap" ClipToBounds="True"
+                                                   Height="38"/>
+                                        <DockPanel Margin="4,6,4,0">
+                                            <TextBlock DockPanel.Dock="Right" FontSize="11"
+                                                       Foreground="{StaticResource MutedSoftBrush}"
+                                                       Text="{Binding UpdatedLabel}"
+                                                       Visibility="{Binding HasUpdatedDate, Converter={StaticResource BoolToVis}}"/>
+                                            <TextBlock FontSize="11" Foreground="{StaticResource MutedBrush}"
+                                                       Text="{Binding Version}"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+                </Grid>
+
+                <!-- Vista impostazioni -->
+                <views:SettingsView Visibility="{Binding IsSettingsVisible, Converter={StaticResource BoolToVis}}"/>
             </Grid>
         </Grid>
 
@@ -225,6 +342,7 @@
                 <Grid>
                     <views:GameDetail/>
                     <Button Style="{StaticResource CloseButton}" Content="✕"
+                            AutomationProperties.Name="Chiudi"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="18"
                             Command="{Binding CloseDetailCommand}"/>
                 </Grid>

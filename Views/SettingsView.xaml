@@ -1,0 +1,168 @@
+<UserControl x:Class="PatchIt.Client.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="Transparent">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="34,28,34,44" MaxWidth="880" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Impostazioni" FontSize="30" FontWeight="SemiBold"
+                       FontFamily="{StaticResource DisplayFont}"/>
+            <TextBlock Text="Gestisci download, manutenzione e informazioni."
+                       FontSize="13" Foreground="{StaticResource MutedBrush}" Margin="0,5,0,0"/>
+
+            <!-- ========== Download ========== -->
+            <Border Style="{StaticResource SettingsCard}" Margin="0,26,0,0">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SectionHeading}" Text="DOWNLOAD"/>
+
+                    <TextBlock Text="Cartella di download" FontSize="14" FontWeight="SemiBold"/>
+                    <TextBlock Text="Dove vengono salvate le patch scaricate."
+                               FontSize="12.5" Foreground="{StaticResource MutedBrush}" Margin="0,3,0,0"/>
+
+                    <Border Background="{StaticResource SurfaceHiBrush}"
+                            BorderBrush="{StaticResource LineSoftBrush}" BorderThickness="1"
+                            CornerRadius="9" Padding="12,10" Margin="0,12,0,0">
+                        <TextBlock Text="{Binding DownloadDirectory}" FontSize="12.5"
+                                   Foreground="{StaticResource MutedBrush}"
+                                   TextTrimming="CharacterEllipsis"/>
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                        <Button Style="{StaticResource BtnSmall}" Content="Cambia cartella"
+                                Command="{Binding ChangeFolderCommand}"/>
+                        <Button Style="{StaticResource BtnSmall}" Content="Apri cartella"
+                                Margin="8,0,0,0"
+                                Command="{Binding OpenDownloadFolderCommand}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- ========== Manutenzione ========== -->
+            <Border Style="{StaticResource SettingsCard}" Margin="0,16,0,0">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SectionHeading}" Text="MANUTENZIONE"/>
+
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource BtnSmall}"
+                                Content="Aggiorna" VerticalAlignment="Center"
+                                Command="{Binding LoadCommand}"/>
+                        <StackPanel Margin="0,0,16,0">
+                            <TextBlock Text="Catalogo" FontSize="13.5" FontWeight="SemiBold"/>
+                            <TextBlock Text="Ricarica l'elenco delle traduzioni dal sito."
+                                       FontSize="12" Foreground="{StaticResource MutedBrush}"
+                                       Margin="0,3,0,0"/>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <Border Height="1" Margin="0,14" Background="{StaticResource LineSoftBrush}"/>
+
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource BtnSmall}"
+                                Content="Svuota" VerticalAlignment="Center"
+                                Command="{Binding ClearCoverCacheCommand}"/>
+                        <StackPanel Margin="0,0,16,0">
+                            <TextBlock Text="Cache copertine" FontSize="13.5" FontWeight="SemiBold"/>
+                            <TextBlock Text="Elimina le copertine salvate e le riscarica."
+                                       FontSize="12" Foreground="{StaticResource MutedBrush}"
+                                       Margin="0,3,0,0"/>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <Border Height="1" Margin="0,14" Background="{StaticResource LineSoftBrush}"/>
+
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource BtnSmall}"
+                                Content="Resetta" VerticalAlignment="Center"
+                                Command="{Binding ResetLibraryCommand}"/>
+                        <StackPanel Margin="0,0,16,0">
+                            <TextBlock Text="Libreria locale" FontSize="13.5" FontWeight="SemiBold"/>
+                            <TextBlock Text="Cancella la cronologia dei download (i file restano sul disco)."
+                                       FontSize="12" Foreground="{StaticResource MutedBrush}"
+                                       Margin="0,3,0,0"/>
+                        </StackPanel>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- ========== Cronologia ========== -->
+            <Border Style="{StaticResource SettingsCard}" Margin="0,16,0,0">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SectionHeading}" Text="CRONOLOGIA DOWNLOAD"/>
+
+                    <ItemsControl ItemsSource="{Binding DownloadHistory}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{StaticResource LineSoftBrush}"
+                                        BorderThickness="0,0,0,1" Padding="0,11">
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource BtnSmall}"
+                                                Content="Apri" VerticalAlignment="Center"
+                                                Command="{Binding DataContext.RevealFileCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding FilePath}"/>
+                                        <StackPanel Margin="0,0,16,0">
+                                            <DockPanel>
+                                                <Border DockPanel.Dock="Right" Padding="7,1" CornerRadius="999"
+                                                        Background="{StaticResource AmberDimBrush}"
+                                                        Visibility="{Binding FileExists, Converter={StaticResource InvBoolToVis}}">
+                                                    <TextBlock Text="file non trovato" FontSize="10"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource AmberBrush}"/>
+                                                </Border>
+                                                <TextBlock Text="{Binding Title}" FontSize="13.5"
+                                                           FontWeight="SemiBold"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                            </DockPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                                <TextBlock Text="{Binding Version}" FontSize="11.5"
+                                                           Foreground="{StaticResource MutedBrush}"/>
+                                                <TextBlock Text="{Binding DateLabel}" FontSize="11.5" Margin="12,0,0,0"
+                                                           Foreground="{StaticResource MutedSoftBrush}"/>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding FilePath}" FontSize="11"
+                                                       Foreground="{StaticResource MutedSoftBrush}"
+                                                       Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="Nessun download registrato."
+                               FontSize="12.5" Foreground="{StaticResource MutedBrush}" Margin="0,4,0,2"
+                               Visibility="{Binding HasDownloadHistory, Converter={StaticResource InvBoolToVis}}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ========== Info ========== -->
+            <Border Style="{StaticResource SettingsCard}" Margin="0,16,0,0">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SectionHeading}" Text="INFORMAZIONI"/>
+
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Style="{StaticResource BtnSmall}" Content="Sito web"
+                                    Command="{Binding OpenUrlCommand}"
+                                    CommandParameter="https://patchit-traduzioni.vercel.app"/>
+                            <Button Style="{StaticResource BtnSmall}" Content="GitHub" Margin="8,0,0,0"
+                                    Command="{Binding OpenUrlCommand}"
+                                    CommandParameter="https://github.com/matteogit-dev/patchit-desktop"/>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="PatchIT Desktop" FontSize="13.5" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding AppVersion}" FontSize="12"
+                                       Foreground="{StaticResource MutedBrush}" Margin="0,3,0,0"/>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <Border Height="1" Margin="0,14" Background="{StaticResource LineSoftBrush}"/>
+
+                    <TextBlock Text="Traduzioni amatoriali per videogiochi. Uso personale e non commerciale."
+                               FontSize="12" Foreground="{StaticResource MutedSoftBrush}"/>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

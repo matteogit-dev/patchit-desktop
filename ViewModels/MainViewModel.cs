@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
+using PatchIt.Client.Models;
 using PatchIt.Client.Services;
 
 namespace PatchIt.Client.ViewModels;
@@ -32,6 +34,9 @@ public sealed partial class MainViewModel : ObservableObject
     private string activeFilter = "all";
 
     [ObservableProperty]
+    private string currentView = "library";
+
+    [ObservableProperty]
     private bool isLoading = true;
 
     [ObservableProperty]
@@ -58,11 +63,57 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string downloadDirectory = "";
 
+    public MainViewModel()
+    {
+        Filters =
+        [
+            new("all", "Tutti", Palette.Amber),
+            new("complete", "Completate", Palette.Teal),
+            new("progress", "In corso", Palette.Amber),
+            new("paused", "In pausa", Palette.Violet),
+            new("planned", "Pianificate", Palette.Muted),
+            new("downloaded", "Scaricati", Palette.Teal),
+        ];
+    }
+
+    public ObservableCollection<FilterOptionViewModel> Filters { get; }
+
+    public ObservableCollection<DownloadHistoryItem> DownloadHistory { get; } = [];
+
     public int GameCount => Games.Count;
 
     public int UpdateCount => _all.Count(c => c.HasUpdate);
 
+    public bool HasDownloadHistory => DownloadHistory.Count > 0;
+
     public bool HasSelection => SelectedGame is not null;
+
+    public bool IsLibraryVisible => CurrentView is "library" or "updates";
+
+    public bool IsSettingsVisible => CurrentView == "settings";
+
+    public string LibraryTitle => CurrentView == "updates" ? "Aggiornamenti" : "Libreria";
+
+    public string LibrarySubtitle => CurrentView == "updates"
+        ? "Patch con una nuova versione disponibile"
+        : "Sfoglia il catalogo delle traduzioni";
+
+    public string EmptyTitle => CurrentView == "updates"
+        ? "Tutto aggiornato"
+        : "Nessun titolo trovato";
+
+    public string EmptyMessage => CurrentView == "updates"
+        ? "Non ci sono patch da aggiornare."
+        : "Prova a cambiare ricerca o filtro.";
+
+    public string AppVersion
+    {
+        get
+        {
+            var version = typeof(MainViewModel).Assembly.GetName().Version;
+            return version is null ? "" : $"v{version.Major}.{version.Minor}.{version.Build}";
+        }
+    }
 
     partial void OnSelectedGameChanged(GameCardViewModel? value)
     {
@@ -74,10 +125,49 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnSearchTextChanged(string value) => ApplyFilter();
 
-    partial void OnActiveFilterChanged(string value) => ApplyFilter();
+    partial void OnActiveFilterChanged(string value)
+    {
+        UpdateActiveFilter();
+        ApplyFilter();
+    }
+
+    partial void OnCurrentViewChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsLibraryVisible));
+        OnPropertyChanged(nameof(IsSettingsVisible));
+        OnPropertyChanged(nameof(LibraryTitle));
+        OnPropertyChanged(nameof(LibrarySubtitle));
+        OnPropertyChanged(nameof(EmptyTitle));
+        OnPropertyChanged(nameof(EmptyMessage));
+    }
 
     [RelayCommand]
-    private void SetFilter(string filter) => ActiveFilter = filter;
+    private void SetFilter(string filter)
+    {
+        if (CurrentView == "updates") CurrentView = "library";
+        ActiveFilter = filter;
+    }
+
+    [RelayCommand]
+    private void Navigate(string view)
+    {
+        switch (view)
+        {
+            case "library":
+                if (ActiveFilter == "updates") ActiveFilter = "all";
+                CurrentView = "library";
+                break;
+
+            case "updates":
+                CurrentView = "updates";
+                ActiveFilter = "updates";
+                break;
+
+            case "settings":
+                CurrentView = "settings";
+                break;
+        }
+    }
 
     [RelayCommand]
     private void OpenDetail()
@@ -108,12 +198,15 @@ public sealed partial class MainViewModel : ObservableObject
             foreach (var card in _all)
             {
                 var localVersion = _library.GetVersion(card.Id);
+                card.IsDownloaded = localVersion is not null;
                 card.HasUpdate = localVersion is not null && localVersion != card.Version;
             }
 
             IsReady = true;
+            UpdateActiveFilter();
             ApplyFilter();
             RaiseCounters();
+            RebuildHistory();
 
             foreach (var card in _all)
                 _ = LoadCoverAsync(card);
@@ -164,8 +257,10 @@ public sealed partial class MainViewModel : ObservableObject
             await _downloader.DownloadAsync(card.Game.DownloadUrl, destination, progress);
 
             _library.Save(card.Game.Id, card.Game.Version, destination);
+            card.IsDownloaded = true;
             card.HasUpdate = false;
             RaiseCounters();
+            RebuildHistory();
 
             DownloadProgress = 100;
             DownloadMessage = $"Salvato in {DownloadDirectory}";
@@ -199,6 +294,87 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void OpenDownloadFolder()
+    {
+        try
+        {
+            Directory.CreateDirectory(DownloadDirectory);
+            Process.Start(new ProcessStartInfo(DownloadDirectory) { UseShellExecute = true });
+        }
+        catch
+        {
+            // cartella non apribile: nessuna azione
+        }
+    }
+
+    [RelayCommand]
+    private static void RevealFile(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return;
+
+        try
+        {
+            if (File.Exists(path))
+            {
+                Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"")
+                {
+                    UseShellExecute = true,
+                });
+                return;
+            }
+
+            var folder = Path.GetDirectoryName(path);
+            if (folder is not null && Directory.Exists(folder))
+                Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true });
+        }
+        catch
+        {
+            // percorso non apribile: nessuna azione
+        }
+    }
+
+    [RelayCommand]
+    private async Task ClearCoverCacheAsync()
+    {
+        try
+        {
+            foreach (var file in Directory.GetFiles(AppPaths.Covers))
+                File.Delete(file);
+        }
+        catch
+        {
+            // cache parzialmente eliminata: si prosegue
+        }
+
+        foreach (var card in _all) card.CoverPath = "";
+        await Task.WhenAll(_all.Select(LoadCoverAsync));
+    }
+
+    [RelayCommand]
+    private void ResetLibrary()
+    {
+        var result = MessageBox.Show(
+            "Vuoi cancellare la cronologia dei download?\nLe patch già scaricate sul disco non verranno eliminate.",
+            "Reset libreria",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (result != MessageBoxResult.Yes) return;
+
+        _library.Clear();
+
+        foreach (var card in _all)
+        {
+            card.IsDownloaded = false;
+            card.HasUpdate = false;
+        }
+
+        RebuildHistory();
+        RaiseCounters();
+        ApplyFilter();
+    }
+
+    [RelayCommand]
     private static void OpenUrl(string? url)
     {
         if (string.IsNullOrWhiteSpace(url)) return;
@@ -225,6 +401,10 @@ public sealed partial class MainViewModel : ObservableObject
 
         if (ActiveFilter is "complete" or "progress" or "paused" or "planned")
             query = query.Where(g => g.Game.Status == ActiveFilter);
+        else if (ActiveFilter == "downloaded")
+            query = query.Where(g => g.IsDownloaded);
+        else if (ActiveFilter == "updates")
+            query = query.Where(g => g.HasUpdate);
 
         var term = SearchText.Trim();
         if (term.Length > 0)
@@ -244,9 +424,51 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(GameCount));
     }
 
+    private void UpdateActiveFilter()
+    {
+        foreach (var filter in Filters)
+            filter.IsActive = filter.Key == ActiveFilter;
+    }
+
     private void RaiseCounters()
     {
+        foreach (var filter in Filters)
+        {
+            filter.Count = filter.Key switch
+            {
+                "all" => _all.Count,
+                "complete" => _all.Count(c => c.Game.Status == "complete"),
+                "progress" => _all.Count(c => c.Game.Status == "progress"),
+                "paused" => _all.Count(c => c.Game.Status == "paused"),
+                "planned" => _all.Count(c => c.Game.Status == "planned"),
+                "downloaded" => _all.Count(c => c.IsDownloaded),
+                _ => 0,
+            };
+        }
+
         OnPropertyChanged(nameof(GameCount));
         OnPropertyChanged(nameof(UpdateCount));
+    }
+
+    private void RebuildHistory()
+    {
+        DownloadHistory.Clear();
+
+        foreach (var entry in _library.GetAll())
+        {
+            var title = _all.FirstOrDefault(c => c.Id == entry.Id)?.Title ?? entry.Id;
+            var date = DateTime.TryParse(entry.DownloadedAt, out var parsed)
+                ? parsed.ToString("dd/MM/yyyy HH:mm")
+                : entry.DownloadedAt;
+
+            DownloadHistory.Add(new DownloadHistoryItem(
+                title,
+                entry.Version,
+                date,
+                entry.FilePath,
+                File.Exists(entry.FilePath)));
+        }
+
+        OnPropertyChanged(nameof(HasDownloadHistory));
     }
 }

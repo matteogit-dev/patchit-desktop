@@ -15,6 +15,9 @@ public sealed partial class GameCardViewModel : ObservableObject
     [ObservableProperty]
     private bool hasUpdate;
 
+    [ObservableProperty]
+    private bool isDownloaded;
+
     public GameCardViewModel(Game game)
     {
         Game = game;
@@ -33,6 +36,7 @@ public sealed partial class GameCardViewModel : ObservableObject
     public string Version => Game.Version;
     public string Description => Game.Description;
 
+    public bool HasVersion => !string.IsNullOrWhiteSpace(Game.Version);
     public bool HasTags => Game.Tags.Count > 0;
     public string TagsLabel => string.Join("  ·  ", Game.Tags);
 
@@ -83,6 +87,7 @@ public sealed partial class GameCardViewModel : ObservableObject
     public bool HasDescription => !string.IsNullOrWhiteSpace(Game.Description);
     public bool HasInstructions => Instructions.Count > 0;
     public bool HasChangelog => Changelog.Count > 0;
+    public bool HasDetailsContent => HasDescription || HasInstructions || HasChangelog;
 
     public IReadOnlyList<InstructionItem> Instructions { get; }
     public IReadOnlyList<ChangelogItem> Changelog { get; }
