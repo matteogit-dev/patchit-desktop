@@ -1,0 +1,10 @@
+# Build outputs
+bin/
+obj/
+release/
+*.user
+
+# IDE
+.vs/
+.vscode/
+.idea/
