@@ -24,6 +24,30 @@ Requisiti: Windows 10/11 a 64 bit. Nessun runtime .NET richiesto (build self-con
 
 I dati arrivano da `catalog.json`, generato automaticamente dal sito durante il build.
 
+## Compilare da sorgenti
+
+Le sorgenti complete vivono nella cartella `client/` del repository del sito (privato); questo repository è la **copia pubblica per le release** — va aggiornato a ogni nuova release.
+
+> ⚠️ **`dotnet build` NON basta.** Compila solo `bin/Debug` e lascia `release/PatchIT.exe` com'era. L'exe distribuito si aggiorna **solo** con `dotnet publish`.
+
+```powershell
+dotnet publish PatchIt.Client.csproj -c Release -r win-x64 --self-contained true `
+  -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+  -p:EnableCompressionInSingleFile=true -o release
+```
+
+L'output è un unico `release/PatchIT.exe` (~65 MB) da caricare come asset della release.
+
+### Pubblicare una nuova release
+
+1. Aggiorna `<Version>` in `PatchIt.Client.csproj` (es. `1.1.0`), poi `git commit` e `git push`.
+2. Rigenera l'exe con il comando `dotnet publish` qui sopra (sovrascrive `release/PatchIT.exe`).
+3. Elimina `release/PatchIT.pdb`: non serve distribuirlo.
+4. Crea e carica il tag: `git tag v1.1.0` e `git push origin v1.1.0`.
+5. Su GitHub: **Releases → Draft a new release** → tag `v1.1.0` → allega `release/PatchIT.exe` → **Publish**.
+
+Nota: `release/` è in `.gitignore`, quindi l'exe **non** finisce nel repo: va caricato solo come asset della release.
+
 ## License
 
 Traduzioni e codice: uso personale e non commerciale. Non ridistribuire le patch senza autorizzazione.
