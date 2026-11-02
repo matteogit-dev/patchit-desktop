@@ -3,14 +3,15 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:PatchIt.Client.ViewModels"
         xmlns:views="clr-namespace:PatchIt.Client.Views"
-        Title="PatchIT — Catalogo traduzioni"
-        Width="1260" Height="800"
-        MinWidth="980" MinHeight="620"
+        Title="PatchIT — Libreria traduzioni"
+        Width="1280" Height="840"
+        MinWidth="1000" MinHeight="660"
         WindowStartupLocation="CenterScreen"
         Icon="/PatchIT;component/Assets/logo.png"
-        Background="{StaticResource BgBrush}"
+        Background="{StaticResource WindowBgBrush}"
         FontFamily="{StaticResource BodyFont}"
         FontSize="14"
+        KeyDown="Window_KeyDown"
         Loaded="Window_Loaded">
 
     <Window.DataContext>
@@ -18,169 +19,216 @@
     </Window.DataContext>
 
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="400"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
+        <!-- ==================== Libreria ==================== -->
+        <Grid x:Name="LibraryRoot">
+            <Grid.Style>
+                <Style TargetType="Grid">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsDetailOpen}" Value="True">
+                            <Setter Property="Effect">
+                                <Setter.Value>
+                                    <BlurEffect Radius="12" KernelType="Gaussian"/>
+                                </Setter.Value>
+                            </Setter>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Style>
 
-        <!-- ============ Colonna sinistra: lista ============ -->
-        <Border Grid.Column="0"
-                Background="{StaticResource SurfaceBrush}"
-                BorderBrush="{StaticResource LineBrush}"
-                BorderThickness="0,0,1,0">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-                <!-- Header -->
-                <StackPanel Grid.Row="0" Margin="16,14,16,12">
-                    <DockPanel Margin="0,0,0,12" LastChildFill="False">
-                        <Image DockPanel.Dock="Left" Source="/PatchIT;component/Assets/logo.png"
-                               Width="28" Height="28" Margin="0,0,10,0"
-                               RenderOptions.BitmapScalingMode="HighQuality"/>
-                        <TextBlock Text="PatchIT" FontSize="18" FontWeight="SemiBold"
-                                   FontFamily="{StaticResource DisplayFont}"
-                                   VerticalAlignment="Center"/>
-                        <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center"
-                                   Foreground="{StaticResource MutedBrush}" FontSize="12.5">
-                            <Run Text="{Binding GameCount, Mode=OneWay}"/><Run Text=" patch"/>
-                        </TextBlock>
+            <!-- Header -->
+            <Border Grid.Row="0" Padding="34,24,34,0">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Brand -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Image Source="/PatchIT;component/Assets/logo.png"
+                                   Width="32" Height="32" Margin="0,0,12,0"
+                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="PatchIT" FontSize="19" FontWeight="SemiBold"
+                                           FontFamily="{StaticResource DisplayFont}"/>
+                                <TextBlock Text="Libreria traduzioni" FontSize="11.5"
+                                           Foreground="{StaticResource MutedSoftBrush}"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Ricerca -->
+                        <TextBox Grid.Column="1"
+                                 Style="{StaticResource SearchBox}"
+                                 Width="440" Height="42"
+                                 HorizontalAlignment="Center"
+                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"/>
+
+                        <!-- Contatori -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal"
+                                    HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Border Margin="0,0,10,0" Padding="11,6" CornerRadius="999"
+                                    Background="{StaticResource AmberDimBrush}"
+                                    Visibility="{Binding UpdateCount, Converter={StaticResource CountToVis}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="▲" FontSize="9" Foreground="{StaticResource AmberBrush}"
+                                               Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock FontSize="12" FontWeight="SemiBold"
+                                               Foreground="{StaticResource AmberBrush}">
+                                        <Run Text="{Binding UpdateCount, Mode=OneWay}"/>
+                                        <Run Text=" aggiornamenti"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+                            <TextBlock VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}" FontSize="12.5">
+                                <Run Text="{Binding GameCount, Mode=OneWay}"/><Run Text=" titoli"/>
+                            </TextBlock>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Filtri -->
+                    <DockPanel Margin="0,20,0,0" LastChildFill="False">
+                        <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                            <Button Style="{StaticResource PillButton}" Tag="all"
+                                    Content="Tutti" Command="{Binding SetFilterCommand}" CommandParameter="all"/>
+                            <Button Style="{StaticResource PillButton}" Tag="complete"
+                                    Content="Completate" Command="{Binding SetFilterCommand}" CommandParameter="complete"/>
+                            <Button Style="{StaticResource PillButton}" Tag="progress"
+                                    Content="In corso" Command="{Binding SetFilterCommand}" CommandParameter="progress"/>
+                            <Button Style="{StaticResource PillButton}" Tag="paused"
+                                    Content="In pausa" Command="{Binding SetFilterCommand}" CommandParameter="paused"/>
+                            <Button Style="{StaticResource PillButton}" Tag="planned"
+                                    Content="Pianificate" Command="{Binding SetFilterCommand}" CommandParameter="planned"/>
+                        </StackPanel>
                     </DockPanel>
 
-                    <TextBox Style="{StaticResource SearchBox}"
-                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"/>
+                    <Border Height="1" Margin="0,20,0,0" Background="{StaticResource LineSoftBrush}"/>
+                </StackPanel>
+            </Border>
 
-                    <WrapPanel Margin="0,11,0,0">
-                        <Button Style="{StaticResource PillButton}" Tag="all"
-                                Content="Tutti" Command="{Binding SetFilterCommand}" CommandParameter="all"/>
-                        <Button Style="{StaticResource PillButton}" Tag="complete"
-                                Content="Completate" Command="{Binding SetFilterCommand}" CommandParameter="complete"/>
-                        <Button Style="{StaticResource PillButton}" Tag="progress"
-                                Content="In corso" Command="{Binding SetFilterCommand}" CommandParameter="progress"/>
-                        <Button Style="{StaticResource PillButton}" Tag="paused"
-                                Content="In pausa" Command="{Binding SetFilterCommand}" CommandParameter="paused"/>
-                        <Button Style="{StaticResource PillButton}" Tag="planned"
-                                Content="Pianificate" Command="{Binding SetFilterCommand}" CommandParameter="planned"/>
-                    </WrapPanel>
-
-                    <!-- Badge aggiornamenti -->
-                    <Border Margin="0,11,0,0" Padding="11,7" CornerRadius="8"
-                            Background="{StaticResource AmberDimBrush}"
-                            Visibility="{Binding UpdateCount, Converter={StaticResource CountToVis}}">
-                        <DockPanel>
-                            <TextBlock DockPanel.Dock="Left" Text="▲" Foreground="{StaticResource AmberBrush}"
-                                       FontSize="11" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock FontSize="12.5" VerticalAlignment="Center">
-                                <Run Text="{Binding UpdateCount, Mode=OneWay}"/>
-                                <Run Text=" aggiornamento/i disponibili"/>
-                            </TextBlock>
-                        </DockPanel>
-                    </Border>
+            <!-- Corpo -->
+            <Grid Grid.Row="1">
+                <!-- Loading -->
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                            Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
+                    <ProgressBar IsIndeterminate="True" Width="170" Height="5" Margin="0,0,0,14"/>
+                    <TextBlock Text="Caricamento libreria…" Foreground="{StaticResource MutedBrush}"/>
                 </StackPanel>
 
-                <!-- Corpo: caricamento / errore / lista -->
-                <Grid Grid.Row="1">
-                    <!-- Loading -->
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
-                                Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
-                        <ProgressBar IsIndeterminate="True" Width="150" Height="6" Margin="0,0,0,12"/>
-                        <TextBlock Text="Caricamento catalogo…" Foreground="{StaticResource MutedBrush}"/>
-                    </StackPanel>
+                <!-- Errore -->
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24"
+                            Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource MutedBrush}"
+                               TextAlignment="Center" Margin="0,0,0,14"/>
+                    <Button Style="{StaticResource BtnGhost}" Content="Riprova"
+                            HorizontalAlignment="Center" Command="{Binding LoadCommand}"/>
+                </StackPanel>
 
-                    <!-- Errore -->
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
-                                Margin="24"
-                                Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVis}}">
-                        <TextBlock Text="{Binding ErrorMessage}"
-                                   Foreground="{StaticResource MutedBrush}"
-                                   TextAlignment="Center" Margin="0,0,0,14"/>
-                        <Button Style="{StaticResource BtnGhost}" Content="Riprova"
-                                HorizontalAlignment="Center"
-                                Command="{Binding LoadCommand}"/>
-                    </StackPanel>
+                <!-- Nessun risultato -->
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24"
+                            Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}">
+                    <Border Width="64" Height="64" CornerRadius="20"
+                            Background="{StaticResource SurfaceBrush}"
+                            HorizontalAlignment="Center" Margin="0,0,0,18">
+                        <TextBlock Text="⌕" FontSize="30" Foreground="{StaticResource MutedSoftBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="Nessun titolo trovato" FontSize="17" FontWeight="SemiBold"
+                               TextAlignment="Center"/>
+                    <TextBlock Text="Prova a cambiare ricerca o filtro." Margin="0,6,0,0" FontSize="13"
+                               Foreground="{StaticResource MutedBrush}" TextAlignment="Center"/>
+                </StackPanel>
 
-                    <!-- Lista -->
-                    <ListBox ItemsSource="{Binding Games}"
-                             SelectedItem="{Binding SelectedGame, Mode=TwoWay}"
-                             Padding="12,4,12,16"
-                             Visibility="{Binding IsReady, Converter={StaticResource BoolToVis}}">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="88"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <Border Grid.Column="0" Width="88" Height="55"
-                                            CornerRadius="7" ClipToBounds="True"
-                                            Background="{StaticResource SurfaceHiBrush}">
-                                        <Image Source="{Binding CoverPath}" Stretch="UniformToFill"
-                                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                <!-- Griglia della libreria -->
+                <ListBox ItemsSource="{Binding Games}"
+                         SelectedItem="{Binding SelectedGame, Mode=TwoWay}"
+                         Margin="34,24,20,26"
+                         Visibility="{Binding IsReady, Converter={StaticResource BoolToVis}}"
+                         PreviewMouseLeftButtonUp="GamesList_PreviewMouseLeftButtonUp"
+                         KeyDown="GamesList_KeyDown">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <!-- Copertina -->
+                                <Grid Height="142">
+                                    <Border CornerRadius="12" Background="{StaticResource CoverFallbackBrush}">
+                                        <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextBrush}" Opacity="0.12"
+                                                   TextAlignment="Center" TextWrapping="Wrap"
+                                                   VerticalAlignment="Center" Margin="18"/>
                                     </Border>
 
-                                    <StackPanel Grid.Column="1" Margin="11,1,0,1">
-                                        <TextBlock Text="{Binding Title}"
-                                                   FontWeight="SemiBold" FontSize="13.5"
-                                                   TextTrimming="CharacterEllipsis"/>
-                                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                                            <Border Padding="7,2" CornerRadius="999"
-                                                    Background="{Binding StatusDimBrush}">
-                                                <Border.Resources>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="FontSize" Value="10.5"/>
-                                                        <Setter Property="FontWeight" Value="SemiBold"/>
-                                                        <Setter Property="Foreground" Value="{Binding StatusBrush}"/>
-                                                    </Style>
-                                                </Border.Resources>
-                                                <TextBlock Text="{Binding StatusLabel}"/>
-                                            </Border>
+                                    <Border CornerRadius="12">
+                                        <Border.Background>
+                                            <ImageBrush ImageSource="{Binding CoverPath}" Stretch="UniformToFill"/>
+                                        </Border.Background>
+                                    </Border>
 
-                                            <Border Margin="7,0,0,0" Padding="7,2" CornerRadius="999"
-                                                    Background="{StaticResource SurfaceHiBrush}"
-                                                    Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVis}}">
-                                                <Border.Resources>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="FontSize" Value="10.5"/>
-                                                        <Setter Property="FontWeight" Value="SemiBold"/>
-                                                        <Setter Property="Foreground" Value="{StaticResource AmberBrush}"/>
-                                                    </Style>
-                                                </Border.Resources>
-                                                <TextBlock Text="AGGIORNA"/>
-                                            </Border>
+                                    <Border CornerRadius="12" Background="{StaticResource CoverFadeBrush}"/>
 
-                                            <Border Margin="7,0,0,0" Padding="7,2" CornerRadius="999"
-                                                    Background="{StaticResource SurfaceHiBrush}">
-                                                <Border.Resources>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="FontSize" Value="10.5"/>
-                                                        <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
-                                                    </Style>
-                                                </Border.Resources>
-                                                <TextBlock Text="{Binding Version}"/>
-                                            </Border>
-                                        </StackPanel>
+                                    <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10"
+                                            Padding="9,3" CornerRadius="999"
+                                            Background="{Binding StatusDimBrush}">
+                                        <TextBlock Text="{Binding StatusLabel}" FontSize="10.5"
+                                                   FontWeight="SemiBold" Foreground="{Binding StatusBrush}"/>
+                                    </Border>
 
-                                        <TextBlock Style="{StaticResource MutedText}" FontSize="11.5"
-                                                   Margin="0,6,0,0"
-                                                   Text="{Binding UpdatedLabel}"
-                                                   Visibility="{Binding HasUpdatedDate, Converter={StaticResource BoolToVis}}"/>
-                                    </StackPanel>
+                                    <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10"
+                                            Padding="9,3" CornerRadius="999"
+                                            Background="{StaticResource AmberDimBrush}"
+                                            Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVis}}">
+                                        <TextBlock Text="AGGIORNA" FontSize="10" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource AmberBrush}"/>
+                                    </Border>
                                 </Grid>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </Grid>
+
+                                <!-- Titolo e meta -->
+                                <TextBlock Text="{Binding Title}" Margin="4,13,4,0"
+                                           FontSize="15" FontWeight="SemiBold" LineHeight="19"
+                                           TextTrimming="CharacterEllipsis" MaxHeight="38"/>
+                                <DockPanel Margin="4,7,4,0">
+                                    <TextBlock DockPanel.Dock="Right" FontSize="11.5"
+                                               Foreground="{StaticResource MutedSoftBrush}"
+                                               Text="{Binding UpdatedLabel}"
+                                               Visibility="{Binding HasUpdatedDate, Converter={StaticResource BoolToVis}}"/>
+                                    <TextBlock FontSize="11.5" Foreground="{StaticResource MutedBrush}"
+                                               Text="{Binding Version}"/>
+                                </DockPanel>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
             </Grid>
-        </Border>
+        </Grid>
 
-        <!-- Separatore -->
-        <Border Grid.Column="1" Width="1" Background="{StaticResource LineBrush}"/>
+        <!-- ==================== Overlay dettaglio ==================== -->
+        <Grid Visibility="{Binding IsDetailOpen, Converter={StaticResource BoolToVis}}">
+            <Border Background="{StaticResource ScrimBrush}"
+                    MouseLeftButtonUp="Scrim_MouseLeftButtonUp"/>
 
-        <!-- ============ Colonna destra: dettaglio ============ -->
-        <views:GameDetail Grid.Column="2"/>
+            <Border MaxWidth="1120" MaxHeight="780" Margin="52"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                    Background="{StaticResource SurfaceBrush}"
+                    BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
+                    CornerRadius="22">
+                <Grid>
+                    <views:GameDetail/>
+                    <Button Style="{StaticResource CloseButton}" Content="✕"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="18"
+                            Command="{Binding CloseDetailCommand}"/>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </Window>

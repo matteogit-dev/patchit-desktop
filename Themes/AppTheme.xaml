@@ -2,29 +2,66 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:conv="clr-namespace:PatchIt.Client.Converters">
 
-    <!-- ================= Palette (identica al sito) ================= -->
-    <Color x:Key="BgColor">#0F1115</Color>
-    <Color x:Key="SurfaceColor">#171A21</Color>
-    <Color x:Key="SurfaceHiColor">#1E222B</Color>
-    <Color x:Key="LineColor">#2A2F3A</Color>
+    <!-- ================= Palette ================= -->
+    <Color x:Key="BgColor">#0B0D12</Color>
+    <Color x:Key="BgDeepColor">#07090D</Color>
+    <Color x:Key="SurfaceColor">#141821</Color>
+    <Color x:Key="SurfaceHiColor">#1B202B</Color>
+    <Color x:Key="SurfaceAltColor">#202634</Color>
+    <Color x:Key="LineColor">#2A3140</Color>
+    <Color x:Key="LineSoftColor">#20252F</Color>
     <Color x:Key="AmberColor">#E8A33D</Color>
     <Color x:Key="TealColor">#3FA9A4</Color>
     <Color x:Key="VioletColor">#A78BFA</Color>
-    <Color x:Key="TextColor">#EDEEF0</Color>
-    <Color x:Key="MutedColor">#8A8F98</Color>
+    <Color x:Key="TextColor">#F2F3F5</Color>
+    <Color x:Key="MutedColor">#8B92A0</Color>
+    <Color x:Key="MutedSoftColor">#626A78</Color>
 
     <SolidColorBrush x:Key="BgBrush" Color="{StaticResource BgColor}"/>
     <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}"/>
     <SolidColorBrush x:Key="SurfaceHiBrush" Color="{StaticResource SurfaceHiColor}"/>
+    <SolidColorBrush x:Key="SurfaceAltBrush" Color="{StaticResource SurfaceAltColor}"/>
     <SolidColorBrush x:Key="LineBrush" Color="{StaticResource LineColor}"/>
+    <SolidColorBrush x:Key="LineSoftBrush" Color="{StaticResource LineSoftColor}"/>
     <SolidColorBrush x:Key="AmberBrush" Color="{StaticResource AmberColor}"/>
-    <SolidColorBrush x:Key="AmberDimBrush" Color="#6B5228"/>
+    <SolidColorBrush x:Key="AmberDimBrush" Color="#5B4722"/>
     <SolidColorBrush x:Key="TealBrush" Color="{StaticResource TealColor}"/>
     <SolidColorBrush x:Key="VioletBrush" Color="{StaticResource VioletColor}"/>
     <SolidColorBrush x:Key="TextBrush" Color="{StaticResource TextColor}"/>
     <SolidColorBrush x:Key="MutedBrush" Color="{StaticResource MutedColor}"/>
-    <SolidColorBrush x:Key="HoverBrush" Color="#1B1F27"/>
-    <SolidColorBrush x:Key="OnAmberBrush" Color="#14100A"/>
+    <SolidColorBrush x:Key="MutedSoftBrush" Color="{StaticResource MutedSoftColor}"/>
+    <SolidColorBrush x:Key="HoverBrush" Color="#1A1F29"/>
+    <SolidColorBrush x:Key="OnAmberBrush" Color="#171006"/>
+    <SolidColorBrush x:Key="ScrimBrush" Color="#C4070910"/>
+    <SolidColorBrush x:Key="ChipBrush" Color="#B3161A23"/>
+
+    <LinearGradientBrush x:Key="WindowBgBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#0C0F15" Offset="0"/>
+        <GradientStop Color="#0A0C11" Offset="0.55"/>
+        <GradientStop Color="#080A0E" Offset="1"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="CoverFallbackBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#232A38" Offset="0"/>
+        <GradientStop Color="#141822" Offset="1"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="CoverFadeBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#00000000" Offset="0"/>
+        <GradientStop Color="#00000000" Offset="0.45"/>
+        <GradientStop Color="#B0141821" Offset="1"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="DetailFadeBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#00000000" Offset="0"/>
+        <GradientStop Color="#A3141821" Offset="0.6"/>
+        <GradientStop Color="#141821" Offset="1"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="PrimaryBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#F1B04B" Offset="0"/>
+        <GradientStop Color="#E29A2B" Offset="1"/>
+    </LinearGradientBrush>
 
     <FontFamily x:Key="BodyFont">Segoe UI Variable Text, Segoe UI</FontFamily>
     <FontFamily x:Key="DisplayFont">Segoe UI Variable Display, Segoe UI</FontFamily>
@@ -43,10 +80,10 @@
     </Style>
 
     <Style x:Key="SectionHeading" TargetType="TextBlock">
-        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontSize" Value="11.5"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
-        <Setter Property="Margin" Value="0,0,0,10"/>
+        <Setter Property="Foreground" Value="{StaticResource MutedSoftBrush}"/>
+        <Setter Property="Margin" Value="0,0,0,12"/>
     </Style>
 
     <Style x:Key="MutedText" TargetType="TextBlock">
@@ -56,11 +93,11 @@
 
     <!-- ================= Pulsanti ================= -->
     <Style x:Key="BtnPrimary" TargetType="Button">
-        <Setter Property="Background" Value="{StaticResource AmberBrush}"/>
+        <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
         <Setter Property="Foreground" Value="{StaticResource OnAmberBrush}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="FontSize" Value="14"/>
-        <Setter Property="Padding" Value="20,11"/>
+        <Setter Property="Padding" Value="22,12"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">
@@ -68,20 +105,20 @@
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="Bd"
                             Background="{TemplateBinding Background}"
-                            CornerRadius="9"
+                            CornerRadius="10"
                             Padding="{TemplateBinding Padding}"
                             SnapsToDevicePixels="True">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="#F0B45A"/>
+                            <Setter TargetName="Bd" Property="Background" Value="#F5BC5E"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="#D4922F"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter TargetName="Bd" Property="Background" Value="#3A3527"/>
+                            <Setter TargetName="Bd" Property="Background" Value="#333021"/>
                             <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -94,7 +131,7 @@
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
         <Setter Property="FontSize" Value="13.5"/>
-        <Setter Property="Padding" Value="16,10"/>
+        <Setter Property="Padding" Value="18,11"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -103,7 +140,7 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{StaticResource LineBrush}"
                             BorderThickness="1"
-                            CornerRadius="9"
+                            CornerRadius="10"
                             Padding="{TemplateBinding Padding}"
                             SnapsToDevicePixels="True">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -111,7 +148,7 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="{StaticResource SurfaceHiBrush}"/>
-                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource MutedBrush}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource MutedSoftBrush}"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}"/>
@@ -128,7 +165,55 @@
 
     <Style x:Key="BtnSmall" TargetType="Button" BasedOn="{StaticResource BtnGhost}">
         <Setter Property="FontSize" Value="12.5"/>
-        <Setter Property="Padding" Value="12,6"/>
+        <Setter Property="Padding" Value="13,7"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{StaticResource LineBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource SurfaceHiBrush}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource MutedSoftBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="CloseButton" TargetType="Button">
+        <Setter Property="Width" Value="40"/>
+        <Setter Property="Height" Value="40"/>
+        <Setter Property="Background" Value="#B3141821"/>
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+        <Setter Property="FontSize" Value="15"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="#33FFFFFF"
+                            BorderThickness="1"
+                            CornerRadius="999">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#E63B4252"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- ================= Pill filtri ================= -->
@@ -137,9 +222,9 @@
         <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
         <Setter Property="FontSize" Value="12.5"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="Padding" Value="13,6"/>
+        <Setter Property="Padding" Value="14,7"/>
         <Setter Property="Cursor" Value="Hand"/>
-        <Setter Property="Margin" Value="0,0,7,0"/>
+        <Setter Property="Margin" Value="0,0,8,0"/>
         <Setter Property="Tag" Value="all"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -155,6 +240,7 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="{StaticResource SurfaceHiBrush}"/>
+                            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
                         </Trigger>
                         <DataTrigger Value="True">
                             <DataTrigger.Binding>
@@ -163,7 +249,7 @@
                                     <Binding RelativeSource="{RelativeSource Self}" Path="Tag"/>
                                 </MultiBinding>
                             </DataTrigger.Binding>
-                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource SurfaceHiBrush}"/>
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource AmberDimBrush}"/>
                             <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AmberBrush}"/>
                             <Setter Property="Foreground" Value="{StaticResource AmberBrush}"/>
                         </DataTrigger>
@@ -175,25 +261,25 @@
 
     <!-- ================= Barra di ricerca ================= -->
     <Style x:Key="SearchBox" TargetType="TextBox">
-        <Setter Property="Background" Value="{StaticResource SurfaceHiBrush}"/>
+        <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
         <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
         <Setter Property="CaretBrush" Value="{StaticResource TextBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Padding" Value="8,9"/>
+        <Setter Property="Padding" Value="8,10"/>
         <Setter Property="FontSize" Value="13.5"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
                     <Border x:Name="Bd"
                             Background="{TemplateBinding Background}"
-                            BorderBrush="{StaticResource LineBrush}"
+                            BorderBrush="{StaticResource LineSoftBrush}"
                             BorderThickness="1"
-                            CornerRadius="9"
+                            CornerRadius="12"
                             Padding="{TemplateBinding Padding}">
                         <Grid>
                             <Path HorizontalAlignment="Left" VerticalAlignment="Center"
-                                  Margin="1,0,0,0" Width="13" Height="13"
-                                  Stretch="Uniform" Stroke="{StaticResource MutedBrush}" StrokeThickness="1.7"
+                                  Margin="4,0,0,0" Width="14" Height="14"
+                                  Stretch="Uniform" Stroke="{StaticResource MutedSoftBrush}" StrokeThickness="1.7"
                                   StrokeStartLineCap="Round" StrokeEndLineCap="Round">
                                 <Path.Data>
                                     <GeometryGroup>
@@ -204,12 +290,12 @@
                             </Path>
                             <TextBlock x:Name="Placeholder"
                                        Text="Cerca un gioco o un genere…"
-                                       Foreground="{StaticResource MutedBrush}"
+                                       Foreground="{StaticResource MutedSoftBrush}"
                                        VerticalAlignment="Center"
-                                       Margin="24,0,0,0"
+                                       Margin="28,0,0,0"
                                        IsHitTestVisible="False"/>
                             <ScrollViewer x:Name="PART_ContentHost"
-                                          Margin="24,0,0,0"
+                                          Margin="28,0,0,0"
                                           VerticalAlignment="Center"
                                           VerticalContentAlignment="Center"
                                           Focusable="False"/>
@@ -220,7 +306,8 @@
                             <Setter TargetName="Placeholder" Property="Visibility" Value="Visible"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource TealBrush}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AmberBrush}"/>
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource SurfaceHiBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -228,11 +315,13 @@
         </Setter>
     </Style>
 
-    <!-- ================= Item lista (card) ================= -->
+    <!-- ================= Card della libreria ================= -->
     <Style TargetType="ListBoxItem">
         <Setter Property="Padding" Value="0"/>
-        <Setter Property="Margin" Value="0,0,0,8"/>
+        <Setter Property="Margin" Value="0,0,22,26"/>
+        <Setter Property="Width" Value="252"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
@@ -240,17 +329,18 @@
                             Background="Transparent"
                             BorderBrush="Transparent"
                             BorderThickness="1"
-                            CornerRadius="11"
-                            Padding="11">
+                            CornerRadius="16"
+                            Padding="8">
                         <ContentPresenter/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource LineSoftBrush}"/>
                         </Trigger>
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="{StaticResource SurfaceHiBrush}"/>
-                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource TealBrush}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AmberBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -267,25 +357,25 @@
 
     <!-- ================= Barra di progresso ================= -->
     <Style TargetType="ProgressBar">
-        <Setter Property="Background" Value="{StaticResource SurfaceHiBrush}"/>
+        <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}"/>
         <Setter Property="Foreground" Value="{StaticResource TealBrush}"/>
-        <Setter Property="Height" Value="8"/>
+        <Setter Property="Height" Value="6"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ProgressBar">
-                    <Border Background="{TemplateBinding Background}" CornerRadius="4" ClipToBounds="True">
+                    <Border Background="{TemplateBinding Background}" CornerRadius="3" ClipToBounds="True">
                         <Border x:Name="PART_Indicator"
                                 Background="{TemplateBinding Foreground}"
                                 HorizontalAlignment="Left"
-                                CornerRadius="4"/>
+                                CornerRadius="3"/>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
 
-    <!-- ================= Scrollbar scure ================= -->
+    <!-- ================= Scrollbar ================= -->
     <Style TargetType="ScrollBar">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Width" Value="10"/>
@@ -307,7 +397,7 @@
                                 <Thumb Focusable="False">
                                     <Thumb.Template>
                                         <ControlTemplate TargetType="Thumb">
-                                            <Border x:Name="ThumbBd" Background="#3A4150" CornerRadius="4" Margin="2,3"/>
+                                            <Border x:Name="ThumbBd" Background="#39414F" CornerRadius="4" Margin="2,3"/>
                                         </ControlTemplate>
                                     </Thumb.Template>
                                 </Thumb>
@@ -332,7 +422,7 @@
         </Style.Triggers>
     </Style>
 
-    <!-- ================= TextBox generico (input scuro) ================= -->
+    <!-- ================= TextBox generico ================= -->
     <Style TargetType="TextBox" x:Key="InputBox">
         <Setter Property="Background" Value="{StaticResource SurfaceHiBrush}"/>
         <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>

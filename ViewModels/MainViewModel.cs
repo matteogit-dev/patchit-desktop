@@ -38,6 +38,12 @@ public sealed partial class MainViewModel : ObservableObject
     private bool isReady;
 
     [ObservableProperty]
+    private bool isEmpty;
+
+    [ObservableProperty]
+    private bool isDetailOpen;
+
+    [ObservableProperty]
     private string? errorMessage;
 
     [ObservableProperty]
@@ -63,6 +69,7 @@ public sealed partial class MainViewModel : ObservableObject
         DownloadMessage = "";
         DownloadProgress = 0;
         OnPropertyChanged(nameof(HasSelection));
+        if (value is null) IsDetailOpen = false;
     }
 
     partial void OnSearchTextChanged(string value) => ApplyFilter();
@@ -71,6 +78,15 @@ public sealed partial class MainViewModel : ObservableObject
 
     [RelayCommand]
     private void SetFilter(string filter) => ActiveFilter = filter;
+
+    [RelayCommand]
+    private void OpenDetail()
+    {
+        if (SelectedGame is not null) IsDetailOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseDetail() => IsDetailOpen = false;
 
     [RelayCommand]
     private async Task LoadAsync()
@@ -220,6 +236,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         var list = query.ToList();
         Games = new ObservableCollection<GameCardViewModel>(list);
+        IsEmpty = list.Count == 0;
 
         if (SelectedGame is null || !list.Contains(SelectedGame))
             SelectedGame = list.FirstOrDefault();
