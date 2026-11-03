@@ -46,7 +46,28 @@ public partial class MainWindow : Window
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Escape && DataContext is MainViewModel vm && vm.IsDetailOpen)
+        if (DataContext is not MainViewModel vm) return;
+
+        if (e.Key == Key.F && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+        {
+            if (vm.IsLibraryVisible)
+            {
+                SearchBox.Focus();
+                SearchBox.SelectAll();
+            }
+
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.F5)
+        {
+            if (vm.LoadCommand.CanExecute(null)) vm.LoadCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.Escape && vm.IsDetailOpen)
         {
             vm.CloseDetailCommand.Execute(null);
             e.Handled = true;

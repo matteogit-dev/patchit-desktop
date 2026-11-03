@@ -8,7 +8,7 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>PatchIT</AssemblyName>
     <RootNamespace>PatchIt.Client</RootNamespace>
-    <Version>1.2.0</Version>
+    <Version>1.2.1</Version>
     <Product>PatchIT</Product>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <Resource Include="..\public\logo.png" Link="Assets\logo.png" />
+    <Resource Include="Assets\app.ico" />
   </ItemGroup>
 
 </Project>

@@ -29,18 +29,20 @@ public sealed record DownloadHistoryItem(
 
 public sealed class ChangelogItem
 {
-    public ChangelogItem(ChangelogEntry entry, bool isLast)
+    public ChangelogItem(ChangelogEntry entry, bool isLast, bool isNew = false)
     {
         Version = entry.Version;
         Date = FormatDate(entry.Date);
         Note = entry.Note;
         IsLast = isLast;
+        IsNew = isNew;
     }
 
     public string Version { get; }
     public string Date { get; }
     public string Note { get; }
     public bool IsLast { get; }
+    public bool IsNew { get; }
 
     private static string FormatDate(string iso) =>
         DateOnly.TryParse(iso, out var d) ? d.ToString("dd/MM/yyyy") : iso;

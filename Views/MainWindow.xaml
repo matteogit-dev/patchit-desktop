@@ -7,7 +7,7 @@
         Width="1320" Height="860"
         MinWidth="1040" MinHeight="680"
         WindowStartupLocation="CenterScreen"
-        Icon="/PatchIT;component/Assets/logo.png"
+        Icon="/PatchIT;component/Assets/app.ico"
         Background="{StaticResource WindowBgBrush}"
         FontFamily="{StaticResource BodyFont}"
         FontSize="14"
@@ -205,7 +205,7 @@
                                                Foreground="{StaticResource MutedBrush}" Margin="0,5,0,0"/>
                                 </StackPanel>
 
-                                <TextBox Grid.Column="1"
+                                <TextBox x:Name="SearchBox" Grid.Column="1"
                                          Style="{StaticResource SearchBox}"
                                          Width="360" Height="42"
                                          VerticalAlignment="Center"
@@ -217,6 +217,32 @@
                                            Foreground="{StaticResource MutedBrush}" FontSize="12.5">
                                     <Run Text="{Binding GameCount, Mode=OneWay}"/><Run Text=" risultati"/>
                                 </TextBlock>
+
+                                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Text="Ordina" FontSize="11.5" VerticalAlignment="Center"
+                                               Foreground="{StaticResource MutedSoftBrush}"
+                                               Margin="0,0,10,0"/>
+                                    <ItemsControl ItemsSource="{Binding SortOptions}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource SidebarFilterButton}"
+                                                        Margin="0,0,4,0" Padding="10,5"
+                                                        AutomationProperties.Name="{Binding Label}"
+                                                        Command="{Binding DataContext.SetSortCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding Key}">
+                                                    <TextBlock Text="{Binding Label}"
+                                                               Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
                             </DockPanel>
 
                             <Border Height="1" Margin="0,18,0,0" Background="{StaticResource LineSoftBrush}"/>
@@ -326,6 +352,22 @@
 
                 <!-- Vista impostazioni -->
                 <views:SettingsView Visibility="{Binding IsSettingsVisible, Converter={StaticResource BoolToVis}}"/>
+
+                <!-- Avviso in basso (errori non bloccanti) -->
+                <Border VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,18"
+                        Padding="14,10" CornerRadius="10"
+                        Background="{StaticResource SurfaceHiBrush}"
+                        BorderBrush="{StaticResource LineSoftBrush}" BorderThickness="1"
+                        Visibility="{Binding HasStatusMessage, Converter={StaticResource BoolToVis}}">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource BtnSmall}" Content="OK"
+                                Margin="12,0,0,0" VerticalAlignment="Center"
+                                Command="{Binding DismissStatusCommand}"/>
+                        <TextBlock Text="{Binding StatusMessage}" FontSize="12.5" TextWrapping="Wrap"
+                                   MaxWidth="520" VerticalAlignment="Center"
+                                   Foreground="{StaticResource MutedBrush}"/>
+                    </DockPanel>
+                </Border>
             </Grid>
         </Grid>
 

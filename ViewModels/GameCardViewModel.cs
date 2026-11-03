@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using PatchIt.Client.Models;
+using PatchIt.Client.Services;
 
 namespace PatchIt.Client.ViewModels;
 
@@ -24,11 +25,7 @@ public sealed partial class GameCardViewModel : ObservableObject
         Instructions = game.Instructions
             .Select((text, i) => new InstructionItem(i + 1, text))
             .ToList();
-        Changelog = game.Changelog
-            .Select((entry, i) => (entry, isLast: i == game.Changelog.Count - 1))
-            .Reverse()
-            .Select(x => new ChangelogItem(x.entry, x.isLast))
-            .ToList();
+        Changelog = BuildChangelog(null);
     }
 
     public string Id => Game.Id;
@@ -90,7 +87,30 @@ public sealed partial class GameCardViewModel : ObservableObject
     public bool HasDetailsContent => HasDescription || HasInstructions || HasChangelog;
 
     public IReadOnlyList<InstructionItem> Instructions { get; }
-    public IReadOnlyList<ChangelogItem> Changelog { get; }
+    public IReadOnlyList<ChangelogItem> Changelog { get; private set; }
+    public bool HasNewChanges => Changelog.Any(c => c.IsNew);
+
+    /// <summary>Evidenzia le voci di changelog successive alla versione installata.</summary>
+    public void SetLocalVersion(string? version)
+    {
+        Changelog = BuildChangelog(version);
+        OnPropertyChanged(nameof(Changelog));
+        OnPropertyChanged(nameof(HasNewChanges));
+    }
+
+    private IReadOnlyList<ChangelogItem> BuildChangelog(string? localVersion)
+    {
+        var entries = Game.Changelog;
+
+        return entries
+            .Select((entry, i) => (entry, isLast: i == entries.Count - 1))
+            .Reverse()
+            .Select(x => new ChangelogItem(
+                x.entry,
+                x.isLast,
+                localVersion is not null && VersionComparer.IsNewer(x.entry.Version, localVersion)))
+            .ToList();
+    }
 
     partial void OnHasUpdateChanged(bool value) => OnPropertyChanged(nameof(DownloadButtonText));
 

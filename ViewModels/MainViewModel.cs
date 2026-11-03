@@ -34,6 +34,9 @@ public sealed partial class MainViewModel : ObservableObject
     private string activeFilter = "all";
 
     [ObservableProperty]
+    private string sortMode = "default";
+
+    [ObservableProperty]
     private string currentView = "library";
 
     [ObservableProperty]
@@ -63,6 +66,9 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string downloadDirectory = "";
 
+    [ObservableProperty]
+    private string statusMessage = "";
+
     public MainViewModel()
     {
         Filters =
@@ -74,9 +80,20 @@ public sealed partial class MainViewModel : ObservableObject
             new("planned", "Pianificate", Palette.Muted),
             new("downloaded", "Scaricati", Palette.Teal),
         ];
+
+        SortOptions =
+        [
+            new("default", "Predefinito"),
+            new("name", "A-Z"),
+            new("updated", "Recenti"),
+        ];
+
+        UpdateActiveSort();
     }
 
     public ObservableCollection<FilterOptionViewModel> Filters { get; }
+
+    public ObservableCollection<SortOptionViewModel> SortOptions { get; }
 
     public ObservableCollection<DownloadHistoryItem> DownloadHistory { get; } = [];
 
@@ -87,6 +104,8 @@ public sealed partial class MainViewModel : ObservableObject
     public bool HasDownloadHistory => DownloadHistory.Count > 0;
 
     public bool HasSelection => SelectedGame is not null;
+
+    public bool HasStatusMessage => !string.IsNullOrWhiteSpace(StatusMessage);
 
     public bool IsLibraryVisible => CurrentView is "library" or "updates";
 
@@ -125,9 +144,18 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnSearchTextChanged(string value) => ApplyFilter();
 
+    partial void OnStatusMessageChanged(string value) =>
+        OnPropertyChanged(nameof(HasStatusMessage));
+
     partial void OnActiveFilterChanged(string value)
     {
         UpdateActiveFilter();
+        ApplyFilter();
+    }
+
+    partial void OnSortModeChanged(string value)
+    {
+        UpdateActiveSort();
         ApplyFilter();
     }
 
@@ -139,14 +167,20 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(LibrarySubtitle));
         OnPropertyChanged(nameof(EmptyTitle));
         OnPropertyChanged(nameof(EmptyMessage));
+
+        // ricalcola "file non trovato" ogni volta che si apre Impostazioni
+        if (value == "settings") RebuildHistory();
     }
 
     [RelayCommand]
     private void SetFilter(string filter)
     {
-        if (CurrentView == "updates") CurrentView = "library";
+        if (CurrentView != "library") CurrentView = "library";
         ActiveFilter = filter;
     }
+
+    [RelayCommand]
+    private void SetSort(string sort) => SortMode = sort;
 
     [RelayCommand]
     private void Navigate(string view)
@@ -194,12 +228,16 @@ public sealed partial class MainViewModel : ObservableObject
 
             var games = await _catalog.LoadAsync();
             _all = games.Select(g => new GameCardViewModel(g)).ToList();
+            var localEntries = _library.GetAll().ToDictionary(e => e.Id);
 
             foreach (var card in _all)
             {
-                var localVersion = _library.GetVersion(card.Id);
+                localEntries.TryGetValue(card.Id, out var entry);
+                var localVersion = entry?.Version;
+
                 card.IsDownloaded = localVersion is not null;
-                card.HasUpdate = localVersion is not null && localVersion != card.Version;
+                card.HasUpdate = localVersion is not null && VersionComparer.IsNewer(card.Version, localVersion);
+                card.SetLocalVersion(localVersion);
             }
 
             IsReady = true;
@@ -259,6 +297,7 @@ public sealed partial class MainViewModel : ObservableObject
             _library.Save(card.Game.Id, card.Game.Version, destination);
             card.IsDownloaded = true;
             card.HasUpdate = false;
+            card.SetLocalVersion(card.Game.Version);
             RaiseCounters();
             RebuildHistory();
 
@@ -290,7 +329,15 @@ public sealed partial class MainViewModel : ObservableObject
         if (dialog.ShowDialog() != true) return;
 
         DownloadDirectory = dialog.FolderName;
-        _settings.Save(DownloadDirectory);
+
+        try
+        {
+            _settings.Save(DownloadDirectory);
+        }
+        catch
+        {
+            ReportStatus("Cartella aggiornata, ma non è stato possibile salvare l'impostazione.");
+        }
     }
 
     [RelayCommand]
@@ -303,12 +350,12 @@ public sealed partial class MainViewModel : ObservableObject
         }
         catch
         {
-            // cartella non apribile: nessuna azione
+            ReportStatus("Impossibile aprire la cartella dei download.");
         }
     }
 
     [RelayCommand]
-    private static void RevealFile(string? path)
+    private void RevealFile(string? path)
     {
         if (string.IsNullOrWhiteSpace(path)) return;
 
@@ -325,29 +372,48 @@ public sealed partial class MainViewModel : ObservableObject
 
             var folder = Path.GetDirectoryName(path);
             if (folder is not null && Directory.Exists(folder))
+            {
                 Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true });
+                return;
+            }
+
+            ReportStatus("File non trovato: il percorso non esiste più.");
         }
         catch
         {
-            // percorso non apribile: nessuna azione
+            ReportStatus("Impossibile aprire il percorso del file.");
         }
     }
 
     [RelayCommand]
     private async Task ClearCoverCacheAsync()
     {
+        var failed = 0;
+
         try
         {
             foreach (var file in Directory.GetFiles(AppPaths.Covers))
-                File.Delete(file);
+            {
+                try
+                {
+                    File.Delete(file);
+                }
+                catch
+                {
+                    failed++;
+                }
+            }
         }
         catch
         {
-            // cache parzialmente eliminata: si prosegue
+            // cartella non leggibile: si tenta comunque il ricaricamento
         }
 
         foreach (var card in _all) card.CoverPath = "";
         await Task.WhenAll(_all.Select(LoadCoverAsync));
+
+        if (failed > 0)
+            ReportStatus($"{failed} copertine non eliminate: sono ancora in uso.");
     }
 
     [RelayCommand]
@@ -367,6 +433,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             card.IsDownloaded = false;
             card.HasUpdate = false;
+            card.SetLocalVersion(null);
         }
 
         RebuildHistory();
@@ -375,7 +442,7 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private static void OpenUrl(string? url)
+    private void OpenUrl(string? url)
     {
         if (string.IsNullOrWhiteSpace(url)) return;
 
@@ -385,9 +452,14 @@ public sealed partial class MainViewModel : ObservableObject
         }
         catch
         {
-            // link non apribile: nessuna azione
+            ReportStatus("Impossibile aprire il link.");
         }
     }
+
+    [RelayCommand]
+    private void DismissStatus() => StatusMessage = "";
+
+    private void ReportStatus(string message) => StatusMessage = message;
 
     private async Task LoadCoverAsync(GameCardViewModel card)
     {
@@ -414,6 +486,13 @@ public sealed partial class MainViewModel : ObservableObject
                 g.Game.Tags.Any(t => t.Contains(term, StringComparison.OrdinalIgnoreCase)));
         }
 
+        query = SortMode switch
+        {
+            "name" => query.OrderBy(g => g.Title, StringComparer.CurrentCultureIgnoreCase),
+            "updated" => query.OrderByDescending(g => g.Game.UpdatedDate, StringComparer.Ordinal),
+            _ => query,
+        };
+
         var list = query.ToList();
         Games = new ObservableCollection<GameCardViewModel>(list);
         IsEmpty = list.Count == 0;
@@ -428,6 +507,12 @@ public sealed partial class MainViewModel : ObservableObject
     {
         foreach (var filter in Filters)
             filter.IsActive = filter.Key == ActiveFilter;
+    }
+
+    private void UpdateActiveSort()
+    {
+        foreach (var option in SortOptions)
+            option.IsActive = option.Key == SortMode;
     }
 
     private void RaiseCounters()

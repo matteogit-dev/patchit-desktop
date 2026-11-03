@@ -353,7 +353,8 @@
         <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
         <Setter Property="CaretBrush" Value="{StaticResource TextBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Padding" Value="8,10"/>
+        <Setter Property="Padding" Value="8,0"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="FontSize" Value="13.5"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -381,11 +382,10 @@
                                        Foreground="{StaticResource MutedSoftBrush}"
                                        VerticalAlignment="Center"
                                        Margin="28,0,0,0"
+                                       Visibility="Collapsed"
                                        IsHitTestVisible="False"/>
                             <ScrollViewer x:Name="PART_ContentHost"
                                           Margin="28,0,0,0"
-                                          VerticalAlignment="Center"
-                                          VerticalContentAlignment="Center"
                                           Focusable="False"/>
                         </Grid>
                     </Border>

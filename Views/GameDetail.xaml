@@ -170,9 +170,18 @@
                                                     <TextBlock DockPanel.Dock="Right" FontSize="11.5"
                                                                Foreground="{StaticResource MutedSoftBrush}"
                                                                Text="{Binding Date}"/>
-                                                    <TextBlock FontSize="12" FontWeight="SemiBold"
-                                                               Foreground="{StaticResource AmberBrush}"
-                                                               Text="{Binding Version}"/>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock FontSize="12" FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource AmberBrush}"
+                                                                   Text="{Binding Version}"/>
+                                                        <Border Margin="8,0,0,0" Padding="7,1" CornerRadius="999"
+                                                                Background="{StaticResource AmberDimBrush}"
+                                                                VerticalAlignment="Center"
+                                                                Visibility="{Binding IsNew, Converter={StaticResource BoolToVis}}">
+                                                            <TextBlock Text="NUOVA" FontSize="9.5" FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource AmberBrush}"/>
+                                                        </Border>
+                                                    </StackPanel>
                                                 </DockPanel>
                                                 <TextBlock Margin="0,4,0,0" FontSize="13"
                                                            Foreground="#C9CDD6"

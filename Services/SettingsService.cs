@@ -30,7 +30,7 @@ public sealed class SettingsService
     {
         DownloadDirectory = downloadDirectory;
         var file = new SettingsFile { DownloadDirectory = downloadDirectory };
-        File.WriteAllText(AppPaths.Settings, JsonSerializer.Serialize(file, JsonOptions));
+        AtomicFile.WriteAllText(AppPaths.Settings, JsonSerializer.Serialize(file, JsonOptions));
     }
 
     private static string DefaultDirectory() =>

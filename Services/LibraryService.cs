@@ -61,6 +61,6 @@ public sealed class LibraryService
         };
 
         var file = new LibraryFile { Entries = _entries.Values.OrderBy(e => e.Id).ToList() };
-        File.WriteAllText(AppPaths.Library, JsonSerializer.Serialize(file, JsonOptions));
+        AtomicFile.WriteAllText(AppPaths.Library, JsonSerializer.Serialize(file, JsonOptions));
     }
 }
