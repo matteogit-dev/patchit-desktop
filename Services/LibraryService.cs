@@ -60,6 +60,18 @@ public sealed class LibraryService
             DownloadedAt = DateTime.Now.ToString("o"),
         };
 
+        Persist();
+    }
+
+    /// <summary>Rimuove la voce dalla libreria. Il file scaricato resta sul disco.</summary>
+    public void Remove(string id)
+    {
+        if (!_entries.Remove(id)) return;
+        Persist();
+    }
+
+    private void Persist()
+    {
         var file = new LibraryFile { Entries = _entries.Values.OrderBy(e => e.Id).ToList() };
         AtomicFile.WriteAllText(AppPaths.Library, JsonSerializer.Serialize(file, JsonOptions));
     }

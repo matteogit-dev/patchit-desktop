@@ -16,6 +16,17 @@ public sealed class LibraryFile
 public sealed class SettingsFile
 {
     public string DownloadDirectory { get; set; } = "";
+
+    /// <summary>Cartelle scelte per singoli giochi: id gioco → percorso.</summary>
+    public Dictionary<string, string> GameDirectories { get; set; } = new();
+}
+
+public enum DownloadState
+{
+    Idle,
+    Queued,
+    Downloading,
+    Failed,
 }
 
 public sealed record InstructionItem(int Number, string Text);

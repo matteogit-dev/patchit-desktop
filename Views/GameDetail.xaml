@@ -23,7 +23,7 @@
 
                 <Border CornerRadius="21,21,0,0" Opacity="0.25">
                     <Border.Background>
-                        <ImageBrush ImageSource="{Binding SelectedGame.CoverPath}" Stretch="UniformToFill"/>
+                        <ImageBrush ImageSource="{Binding SelectedGame.Cover}" Stretch="UniformToFill"/>
                     </Border.Background>
                 </Border>
 
@@ -91,7 +91,7 @@
                             BorderBrush="#33FFFFFF" BorderThickness="1">
                         <Border CornerRadius="11">
                             <Border.Background>
-                                <ImageBrush ImageSource="{Binding SelectedGame.CoverPath}"
+                                <ImageBrush ImageSource="{Binding SelectedGame.Cover}"
                                             Stretch="UniformToFill"/>
                             </Border.Background>
                         </Border>
@@ -258,28 +258,21 @@
                                     Command="{Binding OpenUrlCommand}"
                                     CommandParameter="{Binding SelectedGame.SteamUrl}"/>
 
-                            <!-- Stato download -->
-                            <StackPanel Margin="0,15,0,0">
-                                <StackPanel.Style>
-                                    <Style TargetType="StackPanel">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsDownloading}" Value="True">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding DownloadMessage}" Value="">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </StackPanel.Style>
-
-                                <ProgressBar Value="{Binding DownloadProgress, Mode=OneWay}"
+                            <!-- Stato download (per gioco) -->
+                            <StackPanel Margin="0,15,0,0"
+                                        Visibility="{Binding SelectedGame.ShowsDownloadStatus, Converter={StaticResource BoolToVis}}">
+                                <ProgressBar Value="{Binding SelectedGame.DownloadPercent, Mode=OneWay}"
                                              Maximum="100"
                                              Foreground="{StaticResource AmberBrush}"/>
                                 <TextBlock Margin="0,8,0,0" FontSize="12"
                                            Foreground="{StaticResource MutedBrush}"
-                                           Text="{Binding DownloadMessage}"/>
+                                           Text="{Binding SelectedGame.DownloadMessage}"/>
+                                <Button Style="{StaticResource BtnSmall}"
+                                        Content="Annulla download"
+                                        HorizontalAlignment="Left" Margin="0,10,0,0"
+                                        AutomationProperties.Name="Annulla download"
+                                        Command="{Binding CancelDownloadCommand}"
+                                        Visibility="{Binding SelectedGame.IsDownloading, Converter={StaticResource BoolToVis}}"/>
                             </StackPanel>
 
                             <Border Height="1" Margin="0,18,0,16" Background="{StaticResource LineSoftBrush}"/>
@@ -291,6 +284,14 @@
                                            Foreground="{StaticResource TextBrush}"
                                            Text="{Binding SelectedGame.Version}"/>
                                 <TextBlock Text="Versione" FontSize="12.5"
+                                           Foreground="{StaticResource MutedBrush}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,9"
+                                       Visibility="{Binding SelectedGame.HasInstalledDate, Converter={StaticResource BoolToVis}}">
+                                <TextBlock DockPanel.Dock="Right" FontSize="12.5"
+                                           Foreground="{StaticResource TealBrush}"
+                                           Text="{Binding SelectedGame.InstalledDateLabel}"/>
+                                <TextBlock Text="Installata" FontSize="12.5"
                                            Foreground="{StaticResource MutedBrush}"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,9"
@@ -314,13 +315,25 @@
                             <Border Height="1" Margin="0,10,0,16" Background="{StaticResource LineSoftBrush}"/>
 
                             <TextBlock Style="{StaticResource SectionHeading}" Text="CARTELLA"/>
-                            <TextBlock Text="{Binding DownloadDirectory}" FontSize="11.5"
+                            <TextBlock Text="{Binding SelectedGame.DownloadFolder}" FontSize="11.5"
                                        Foreground="{StaticResource MutedBrush}"
-                                       TextTrimming="CharacterEllipsis" Margin="0,0,0,10"/>
+                                       TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
+                            <TextBlock Text="Personalizzata per questo gioco" FontSize="11"
+                                       Foreground="{StaticResource TealBrush}" Margin="0,0,0,8"
+                                       Visibility="{Binding SelectedGame.HasCustomFolder, Converter={StaticResource BoolToVis}}"/>
                             <Button Style="{StaticResource BtnSmall}"
                                     HorizontalAlignment="Stretch"
-                                    Content="Cambia cartella"
-                                    Command="{Binding ChangeFolderCommand}"/>
+                                    Content="Cambia per questo gioco"
+                                    AutomationProperties.Name="Cambia cartella per questo gioco"
+                                    Command="{Binding ChangeGameFolderCommand}"
+                                    CommandParameter="{Binding SelectedGame}"/>
+                            <Button Style="{StaticResource BtnSmall}"
+                                    HorizontalAlignment="Stretch" Margin="0,6,0,0"
+                                    Content="Usa cartella predefinita"
+                                    AutomationProperties.Name="Usa la cartella predefinita"
+                                    Command="{Binding ResetGameFolderCommand}"
+                                    CommandParameter="{Binding SelectedGame}"
+                                    Visibility="{Binding SelectedGame.HasCustomFolder, Converter={StaticResource BoolToVis}}"/>
 
                         </StackPanel>
                     </ScrollViewer>

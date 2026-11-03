@@ -9,6 +9,7 @@ public static class AppPaths
 
     public static string Covers { get; } = Path.Combine(Root, "covers");
     public static string CatalogCache { get; } = Path.Combine(Root, "catalog-cache.json");
+    public static string CatalogMeta { get; } = Path.Combine(Root, "catalog-meta.json");
     public static string Library { get; } = Path.Combine(Root, "library.json");
     public static string Settings { get; } = Path.Combine(Root, "settings.json");
 

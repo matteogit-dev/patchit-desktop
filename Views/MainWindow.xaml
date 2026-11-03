@@ -114,6 +114,31 @@
                                 </Grid>
                             </Button>
 
+                            <Button Style="{StaticResource NavButton}" Tag="installed" AutomationProperties.Name="Installate"
+                                    Command="{Binding NavigateCommand}" CommandParameter="installed">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="&#xE73E;" FontFamily="{StaticResource IconFont}"
+                                               FontSize="15" VerticalAlignment="Center"
+                                               Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                    <TextBlock Grid.Column="1" Text="Installate" Margin="12,0,0,0"
+                                               VerticalAlignment="Center"
+                                               Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                    <Border Grid.Column="2" Padding="7,1" CornerRadius="999"
+                                            Background="#284644"
+                                            VerticalAlignment="Center"
+                                            Visibility="{Binding InstalledCount, Converter={StaticResource CountToVis}}">
+                                        <TextBlock Text="{Binding InstalledCount}" FontSize="10.5"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TealBrush}"/>
+                                    </Border>
+                                </Grid>
+                            </Button>
+
                             <Button Style="{StaticResource NavButton}" Tag="settings" AutomationProperties.Name="Impostazioni"
                                     Command="{Binding NavigateCommand}" CommandParameter="settings">
                                 <Grid>
@@ -167,14 +192,25 @@
                     <!-- Footer -->
                     <Border Grid.Row="2" BorderBrush="{StaticResource LineSoftBrush}" BorderThickness="0,1,0,0"
                             Padding="22,13">
-                        <DockPanel>
-                            <TextBlock DockPanel.Dock="Right" Text="{Binding AppVersion}" FontSize="11"
-                                       Foreground="{StaticResource MutedSoftBrush}"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="PatchIT Desktop" FontSize="11"
-                                       Foreground="{StaticResource MutedSoftBrush}"
-                                       VerticalAlignment="Center"/>
-                        </DockPanel>
+                        <StackPanel>
+                            <Button Style="{StaticResource BtnSmall}"
+                                    Content="{Binding AppUpdateLabel}"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                    Margin="0,0,0,10"
+                                    ToolTip="Apre la pagina della release su GitHub"
+                                    AutomationProperties.Name="Aggiorna PatchIT"
+                                    Command="{Binding OpenUrlCommand}"
+                                    CommandParameter="{Binding AppUpdateUrl}"
+                                    Visibility="{Binding HasAppUpdate, Converter={StaticResource BoolToVis}}"/>
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding AppVersion}" FontSize="11"
+                                           Foreground="{StaticResource MutedSoftBrush}"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock Text="PatchIT Desktop" FontSize="11"
+                                           Foreground="{StaticResource MutedSoftBrush}"
+                                           VerticalAlignment="Center"/>
+                            </DockPanel>
+                        </StackPanel>
                     </Border>
                 </Grid>
             </Border>
@@ -203,6 +239,13 @@
                                                FontFamily="{StaticResource DisplayFont}"/>
                                     <TextBlock Text="{Binding LibrarySubtitle}" FontSize="13"
                                                Foreground="{StaticResource MutedBrush}" Margin="0,5,0,0"/>
+                                    <Border Margin="0,8,0,0" Padding="8,3" CornerRadius="999"
+                                            HorizontalAlignment="Left"
+                                            Background="{StaticResource AmberDimBrush}"
+                                            Visibility="{Binding HasCatalogNote, Converter={StaticResource BoolToVis}}">
+                                        <TextBlock Text="{Binding CatalogNote}" FontSize="11"
+                                                   Foreground="{StaticResource AmberBrush}"/>
+                                    </Border>
                                 </StackPanel>
 
                                 <TextBox x:Name="SearchBox" Grid.Column="1"
@@ -213,10 +256,18 @@
                             </Grid>
 
                             <DockPanel Margin="0,18,0,0">
-                                <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center"
-                                           Foreground="{StaticResource MutedBrush}" FontSize="12.5">
-                                    <Run Text="{Binding GameCount, Mode=OneWay}"/><Run Text=" risultati"/>
-                                </TextBlock>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
+                                            VerticalAlignment="Center" Margin="12,0,0,0">
+                                    <TextBlock VerticalAlignment="Center"
+                                               Foreground="{StaticResource MutedBrush}" FontSize="12.5">
+                                        <Run Text="{Binding GameCount, Mode=OneWay}"/><Run Text=" risultati"/>
+                                    </TextBlock>
+                                    <Button Style="{StaticResource BtnSmall}" Content="Aggiorna tutto"
+                                            Margin="14,0,0,0" VerticalAlignment="Center"
+                                            AutomationProperties.Name="Aggiorna tutto"
+                                            Command="{Binding UpdateAllCommand}"
+                                            Visibility="{Binding CanUpdateAll, Converter={StaticResource BoolToVis}}"/>
+                                </StackPanel>
 
                                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal"
                                             VerticalAlignment="Center">
@@ -244,6 +295,26 @@
                                     </ItemsControl>
                                 </StackPanel>
                             </DockPanel>
+
+                            <!-- Coda "Aggiorna tutto" -->
+                            <Border Margin="0,14,0,0" Padding="14,10" CornerRadius="10"
+                                    Background="{StaticResource SurfaceHiBrush}"
+                                    Visibility="{Binding IsQueueRunning, Converter={StaticResource BoolToVis}}">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource BtnSmall}"
+                                                Content="Ferma" Margin="12,0,0,0"
+                                                AutomationProperties.Name="Ferma aggiornamento"
+                                                Command="{Binding CancelDownloadCommand}"/>
+                                        <TextBlock Text="{Binding QueueMessage}" FontSize="12.5"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{StaticResource MutedBrush}"/>
+                                    </DockPanel>
+                                    <ProgressBar Margin="0,9,0,0" Maximum="100"
+                                                 Value="{Binding QueueProgress, Mode=OneWay}"
+                                                 Foreground="{StaticResource AmberBrush}"/>
+                                </StackPanel>
+                            </Border>
 
                             <Border Height="1" Margin="0,18,0,0" Background="{StaticResource LineSoftBrush}"/>
                         </StackPanel>
@@ -280,6 +351,11 @@
                                        TextAlignment="Center"/>
                             <TextBlock Text="{Binding EmptyMessage}" Margin="0,6,0,0" FontSize="13"
                                        Foreground="{StaticResource MutedBrush}" TextAlignment="Center"/>
+                            <Button Style="{StaticResource BtnSmall}" Content="Azzera ricerca e filtri"
+                                    HorizontalAlignment="Center" Margin="0,16,0,0"
+                                    AutomationProperties.Name="Azzera ricerca e filtri"
+                                    Command="{Binding ResetFiltersCommand}"
+                                    Visibility="{Binding CanResetFilters, Converter={StaticResource BoolToVis}}"/>
                         </StackPanel>
 
                         <!-- Griglia -->
@@ -288,7 +364,30 @@
                                  Margin="34,24,22,26"
                                  Visibility="{Binding IsReady, Converter={StaticResource BoolToVis}}"
                                  PreviewMouseLeftButtonUp="GamesList_PreviewMouseLeftButtonUp"
+                                 PreviewMouseRightButtonDown="GamesList_PreviewMouseRightButtonDown"
                                  KeyDown="GamesList_KeyDown">
+                            <ListBox.ContextMenu>
+                                <ContextMenu Background="{StaticResource SurfaceBrush}"
+                                             BorderBrush="{StaticResource LineBrush}"
+                                             Foreground="{StaticResource TextBrush}">
+                                    <MenuItem Command="{Binding RevealFileCommand}"
+                                              CommandParameter="{Binding SelectedGame.LocalFilePath}">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="Apri cartella"
+                                                       Foreground="{StaticResource TextBrush}"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
+                                    <Separator/>
+                                    <MenuItem IsEnabled="{Binding SelectedGame.IsDownloaded, FallbackValue=False}"
+                                              Command="{Binding RemoveInstalledCommand}"
+                                              CommandParameter="{Binding SelectedGame}">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="Elimina dal disco"
+                                                       Foreground="{StaticResource TextBrush}"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
+                                </ContextMenu>
+                            </ListBox.ContextMenu>
                             <ListBox.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <WrapPanel Orientation="Horizontal"/>
@@ -308,7 +407,7 @@
 
                                             <Border CornerRadius="12">
                                                 <Border.Background>
-                                                    <ImageBrush ImageSource="{Binding CoverPath}" Stretch="UniformToFill"/>
+                                                    <ImageBrush ImageSource="{Binding Cover}" Stretch="UniformToFill"/>
                                                 </Border.Background>
                                             </Border>
 
@@ -328,6 +427,14 @@
                                                 <TextBlock Text="AGGIORNA" FontSize="9.5" FontWeight="SemiBold"
                                                            Foreground="{StaticResource AmberBrush}"/>
                                             </Border>
+
+                                            <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="9"
+                                                    Padding="8,3" CornerRadius="999"
+                                                    Background="#E6284644"
+                                                    Visibility="{Binding IsUpToDate, Converter={StaticResource BoolToVis}}">
+                                                <TextBlock Text="INSTALLATA" FontSize="9.5" FontWeight="SemiBold"
+                                                           Foreground="{StaticResource TealBrush}"/>
+                                            </Border>
                                         </Grid>
 
                                         <!-- Titolo e meta -->
@@ -343,6 +450,10 @@
                                             <TextBlock FontSize="11" Foreground="{StaticResource MutedBrush}"
                                                        Text="{Binding Version}"/>
                                         </DockPanel>
+                                        <ProgressBar Height="3" Margin="4,8,4,0" Maximum="100"
+                                                     Value="{Binding DownloadPercent, Mode=OneWay}"
+                                                     Foreground="{StaticResource AmberBrush}"
+                                                     Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVis}}"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>

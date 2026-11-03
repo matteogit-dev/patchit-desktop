@@ -11,13 +11,60 @@ public sealed partial class GameCardViewModel : ObservableObject
     public Game Game { get; }
 
     [ObservableProperty]
-    private string coverPath = "";
+    private ImageSource? cover;
 
     [ObservableProperty]
     private bool hasUpdate;
 
     [ObservableProperty]
     private bool isDownloaded;
+
+    [ObservableProperty]
+    private string installedAt = "";
+
+    [ObservableProperty]
+    private string localFilePath = "";
+
+    /// <summary>Cartella effettiva in cui finisce la patch di questo gioco.</summary>
+    [ObservableProperty]
+    private string downloadFolder = "";
+
+    /// <summary>Vero quando l'utente ha scelto una cartella diversa da quella predefinita.</summary>
+    [ObservableProperty]
+    private bool hasCustomFolder;
+
+    /// <summary>Scaricata e già allineata al catalogo: non c'è nulla da aggiornare.</summary>
+    public bool IsUpToDate => IsDownloaded && !HasUpdate;
+
+    public string InstalledDateLabel =>
+        DateTime.TryParse(InstalledAt, out var parsed)
+            ? parsed.ToString("dd/MM/yyyy HH:mm")
+            : InstalledAt;
+
+    public bool HasInstalledDate => IsDownloaded && InstalledDateLabel.Length > 0;
+
+    [ObservableProperty]
+    private DownloadState downloadStatus;
+
+    [ObservableProperty]
+    private double downloadPercent;
+
+    [ObservableProperty]
+    private string downloadMessage = "";
+
+    public bool IsDownloading => DownloadStatus == DownloadState.Downloading;
+    public bool IsQueued => DownloadStatus == DownloadState.Queued;
+    public bool ShowsDownloadStatus => IsDownloading || DownloadMessage.Length > 0;
+
+    partial void OnDownloadStatusChanged(DownloadState value)
+    {
+        OnPropertyChanged(nameof(IsDownloading));
+        OnPropertyChanged(nameof(IsQueued));
+        OnPropertyChanged(nameof(ShowsDownloadStatus));
+    }
+
+    partial void OnDownloadMessageChanged(string value) =>
+        OnPropertyChanged(nameof(ShowsDownloadStatus));
 
     public GameCardViewModel(Game game)
     {
@@ -75,7 +122,7 @@ public sealed partial class GameCardViewModel : ObservableObject
     public bool DownloadEnabled => IsLocal || IsExternal;
 
     public string DownloadButtonText => IsLocal
-        ? HasUpdate ? "Aggiorna patch" : "Scarica patch"
+        ? HasUpdate ? "Aggiorna patch" : IsDownloaded ? "Scarica di nuovo" : "Scarica patch"
         : IsExternal ? "Apri link esterno" : "Patch non disponibile";
 
     public bool HasSteam => !string.IsNullOrEmpty(Game.SteamUrl);
@@ -112,7 +159,21 @@ public sealed partial class GameCardViewModel : ObservableObject
             .ToList();
     }
 
-    partial void OnHasUpdateChanged(bool value) => OnPropertyChanged(nameof(DownloadButtonText));
+    partial void OnHasUpdateChanged(bool value)
+    {
+        OnPropertyChanged(nameof(DownloadButtonText));
+        OnPropertyChanged(nameof(IsUpToDate));
+    }
+
+    partial void OnIsDownloadedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(DownloadButtonText));
+        OnPropertyChanged(nameof(IsUpToDate));
+        OnPropertyChanged(nameof(HasInstalledDate));
+    }
+
+    partial void OnInstalledAtChanged(string value) =>
+        OnPropertyChanged(nameof(HasInstalledDate));
 
     private static string FormatDate(string iso)
     {

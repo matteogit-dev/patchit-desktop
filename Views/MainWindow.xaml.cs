@@ -28,6 +28,15 @@ public partial class MainWindow : Window
             vm.OpenDetailCommand.Execute(null);
     }
 
+    /// <summary>Il tasto destro seleziona la card sotto il cursore, così il menu
+    /// contestuale agisce su quella e non sulla selezione precedente.</summary>
+    private void GamesList_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not ListBox list) return;
+        if (ItemsControl.ContainerFromElement(list, e.OriginalSource as DependencyObject) is ListBoxItem item)
+            item.IsSelected = true;
+    }
+
     private void GamesList_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key is not (Key.Enter or Key.Space)) return;
