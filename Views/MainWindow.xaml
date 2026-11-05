@@ -114,7 +114,7 @@
                                 </Grid>
                             </Button>
 
-                            <Button Style="{StaticResource NavButton}" Tag="installed" AutomationProperties.Name="Installate"
+                            <Button Style="{StaticResource NavButton}" Tag="installed" AutomationProperties.Name="Scaricate"
                                     Command="{Binding NavigateCommand}" CommandParameter="installed">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -125,7 +125,7 @@
                                     <TextBlock Grid.Column="0" Text="&#xE73E;" FontFamily="{StaticResource IconFont}"
                                                FontSize="15" VerticalAlignment="Center"
                                                Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
-                                    <TextBlock Grid.Column="1" Text="Installate" Margin="12,0,0,0"
+                                    <TextBlock Grid.Column="1" Text="Scaricate" Margin="12,0,0,0"
                                                VerticalAlignment="Center"
                                                Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
                                     <Border Grid.Column="2" Padding="7,1" CornerRadius="999"
@@ -193,15 +193,31 @@
                     <Border Grid.Row="2" BorderBrush="{StaticResource LineSoftBrush}" BorderThickness="0,1,0,0"
                             Padding="22,13">
                         <StackPanel>
-                            <Button Style="{StaticResource BtnSmall}"
-                                    Content="{Binding AppUpdateLabel}"
-                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                                    Margin="0,0,0,10"
-                                    ToolTip="Apre la pagina della release su GitHub"
-                                    AutomationProperties.Name="Aggiorna PatchIT"
-                                    Command="{Binding OpenUrlCommand}"
-                                    CommandParameter="{Binding AppUpdateUrl}"
-                                    Visibility="{Binding HasAppUpdate, Converter={StaticResource BoolToVis}}"/>
+                            <StackPanel Margin="0,0,0,10"
+                                        Visibility="{Binding HasAppUpdate, Converter={StaticResource BoolToVis}}">
+                                <Button Style="{StaticResource BtnSmall}"
+                                        Content="{Binding AppUpdateButtonText}"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                        ToolTip="Scarica l'aggiornamento, sostituisce l'exe e riavvia PatchIT"
+                                        AutomationProperties.Name="Aggiorna PatchIT"
+                                        Command="{Binding DownloadAppUpdateCommand}"
+                                        IsEnabled="{Binding CanDownloadAppUpdate}"/>
+                                <DockPanel Margin="0,8,0,0"
+                                           Visibility="{Binding IsAppUpdating, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock DockPanel.Dock="Right" FontSize="10.5"
+                                               Margin="8,0,0,0" VerticalAlignment="Center"
+                                               Foreground="{StaticResource MutedSoftBrush}"
+                                               Text="{Binding AppUpdateProgress, StringFormat={}{0:0}%}"/>
+                                    <ProgressBar Value="{Binding AppUpdateProgress, Mode=OneWay}"
+                                                 Maximum="100" Height="4" VerticalAlignment="Center"/>
+                                </DockPanel>
+                                <Button Style="{StaticResource BtnGhost}"
+                                        Content="Note della release"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                        Margin="0,6,0,0" FontSize="11"
+                                        Command="{Binding OpenUrlCommand}"
+                                        CommandParameter="{Binding AppUpdateUrl}"/>
+                            </StackPanel>
                             <DockPanel>
                                 <TextBlock DockPanel.Dock="Right" Text="{Binding AppVersion}" FontSize="11"
                                            Foreground="{StaticResource MutedSoftBrush}"
@@ -370,6 +386,23 @@
                                 <ContextMenu Background="{StaticResource SurfaceBrush}"
                                              BorderBrush="{StaticResource LineBrush}"
                                              Foreground="{StaticResource TextBrush}">
+                                    <MenuItem IsEnabled="{Binding SelectedGame.CanInstallInGame, FallbackValue=False}"
+                                              Command="{Binding InstallInGameCommand}"
+                                              CommandParameter="{Binding SelectedGame}">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="Installa nel gioco"
+                                                       Foreground="{StaticResource TextBrush}"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
+                                    <MenuItem IsEnabled="{Binding SelectedGame.CanVerify, FallbackValue=False}"
+                                              Command="{Binding VerifyFileCommand}"
+                                              CommandParameter="{Binding SelectedGame}">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="Verifica integrità"
+                                                       Foreground="{StaticResource TextBrush}"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
+                                    <Separator/>
                                     <MenuItem Command="{Binding RevealFileCommand}"
                                               CommandParameter="{Binding SelectedGame.LocalFilePath}">
                                         <MenuItem.Header>
@@ -432,7 +465,16 @@
                                                     Padding="8,3" CornerRadius="999"
                                                     Background="#E6284644"
                                                     Visibility="{Binding IsUpToDate, Converter={StaticResource BoolToVis}}">
-                                                <TextBlock Text="INSTALLATA" FontSize="9.5" FontWeight="SemiBold"
+                                                <TextBlock Text="SCARICATA" FontSize="9.5" FontWeight="SemiBold"
+                                                           Foreground="{StaticResource TealBrush}"/>
+                                            </Border>
+
+                                            <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="9"
+                                                    Padding="8,3" CornerRadius="999"
+                                                    Background="#E6284644"
+                                                    ToolTip="{Binding InstalledFolder}"
+                                                    Visibility="{Binding IsInstalledInGame, Converter={StaticResource BoolToVis}}">
+                                                <TextBlock Text="NEL GIOCO" FontSize="9.5" FontWeight="SemiBold"
                                                            Foreground="{StaticResource TealBrush}"/>
                                             </Border>
                                         </Grid>

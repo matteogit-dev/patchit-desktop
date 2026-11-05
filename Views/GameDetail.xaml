@@ -275,6 +275,121 @@
                                         Visibility="{Binding SelectedGame.IsDownloading, Converter={StaticResource BoolToVis}}"/>
                             </StackPanel>
 
+
+
+                            <!-- Installazione nel gioco: solo per le patch locali -->
+                            <StackPanel Visibility="{Binding SelectedGame.IsLocal, Converter={StaticResource BoolToVis}}">
+                                <Border Height="1" Margin="0,18,0,16" Background="{StaticResource LineSoftBrush}"/>
+
+                                <DockPanel Margin="0,0,0,8">
+                                    <Border DockPanel.Dock="Right" Padding="8,2" CornerRadius="999"
+                                            Background="#284644" VerticalAlignment="Center"
+                                            ToolTip="{Binding SelectedGame.InstalledFolder}"
+                                            Visibility="{Binding SelectedGame.IsInstalledInGame, Converter={StaticResource BoolToVis}}">
+                                        <TextBlock Text="NEL GIOCO" FontSize="9.5" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TealBrush}"/>
+                                    </Border>
+                                    <TextBlock Style="{StaticResource SectionHeading}" Text="INSTALLAZIONE"
+                                               Margin="0" VerticalAlignment="Center"/>
+                                </DockPanel>
+
+                                <TextBlock Text="Cartella del gioco in cui copiare i file della patch."
+                                           FontSize="11.5" Foreground="{StaticResource MutedBrush}"
+                                           TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+                                <Border Padding="11,8" CornerRadius="9" Margin="0,0,0,8"
+                                        Background="{StaticResource SurfaceHiBrush}"
+                                        BorderBrush="{StaticResource LineSoftBrush}" BorderThickness="1"
+                                        ToolTip="{Binding SelectedGame.InstallFolder}"
+                                        Visibility="{Binding SelectedGame.HasInstallFolder, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="{Binding SelectedGame.InstallFolder}" FontSize="11.5"
+                                               Foreground="{StaticResource TextBrush}"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </Border>
+
+                                <Border Padding="11,8" CornerRadius="9" Margin="0,0,0,8"
+                                        BorderBrush="{StaticResource LineSoftBrush}" BorderThickness="1"
+                                        Visibility="{Binding SelectedGame.HasInstallFolder, Converter={StaticResource InvBoolToVis}}">
+                                    <TextBlock Text="Nessuna cartella scelta." FontSize="11.5"
+                                               Foreground="{StaticResource AmberBrush}" TextWrapping="Wrap"/>
+                                </Border>
+
+                                <Button Style="{StaticResource BtnSmall}" HorizontalAlignment="Stretch"
+                                        Content="{Binding SelectedGame.InstallFolderButtonText}"
+                                        AutomationProperties.Name="Scegli la cartella del gioco"
+                                        Command="{Binding ChangeGameInstallFolderCommand}"
+                                        CommandParameter="{Binding SelectedGame}"/>
+
+                                <Button Style="{StaticResource BtnPrimary}" HorizontalAlignment="Stretch"
+                                        Margin="0,8,0,0"
+                                        Content="{Binding SelectedGame.InstallButtonText}"
+                                        AutomationProperties.Name="Installa nel gioco"
+                                        Command="{Binding InstallInGameCommand}"
+                                        CommandParameter="{Binding SelectedGame}"
+                                        IsEnabled="{Binding SelectedGame.CanInstallInGame}"/>
+
+                                <ProgressBar IsIndeterminate="True" Height="4" Margin="0,10,0,0"
+                                             Visibility="{Binding SelectedGame.IsInstalling, Converter={StaticResource BoolToVis}}"/>
+
+                                <Button Style="{StaticResource BtnGhost}" HorizontalAlignment="Stretch"
+                                        Margin="0,8,0,0" Content="Ripristina file originali"
+                                        AutomationProperties.Name="Ripristina i file originali"
+                                        Command="{Binding RestoreInstallCommand}"
+                                        CommandParameter="{Binding SelectedGame}"
+                                        Visibility="{Binding SelectedGame.HasBackup, Converter={StaticResource BoolToVis}}"/>
+
+                                <TextBlock Margin="0,10,0,0" FontSize="11.5" TextWrapping="Wrap"
+                                           Foreground="{StaticResource TealBrush}"
+                                           Text="{Binding SelectedGame.InstallMessage}"
+                                           Visibility="{Binding SelectedGame.ShowsInstallMessage, Converter={StaticResource BoolToVis}}"/>
+                            </StackPanel>
+
+                            <Border Height="1" Margin="0,18,0,16" Background="{StaticResource LineSoftBrush}"/>
+
+                            <!-- Integrità del file scaricato -->
+                            <TextBlock Style="{StaticResource SectionHeading}" Text="FILE"/>
+                            <TextBlock Text="Controlla che il file scaricato sia quello pubblicato nel catalogo."
+                                       FontSize="11.5" Foreground="{StaticResource MutedBrush}"
+                                       TextWrapping="Wrap" Margin="0,0,0,8"
+                                       Visibility="{Binding SelectedGame.ShowsIntegrity, Converter={StaticResource InvBoolToVis}}"/>
+                            <TextBlock Text="{Binding SelectedGame.IntegrityMessage}" FontSize="11.5"
+                                       TextWrapping="Wrap" Margin="0,0,0,8"
+                                       Foreground="{Binding SelectedGame.IntegrityBrush}"
+                                       Visibility="{Binding SelectedGame.ShowsIntegrity, Converter={StaticResource BoolToVis}}"/>
+                            <Button Style="{StaticResource BtnSmall}" HorizontalAlignment="Stretch"
+                                    Content="Verifica integrità"
+                                    AutomationProperties.Name="Verifica integrità del file"
+                                    Command="{Binding VerifyFileCommand}"
+                                    CommandParameter="{Binding SelectedGame}"
+                                    IsEnabled="{Binding SelectedGame.CanVerify}"/>
+
+                            <Border Height="1" Margin="0,18,0,16" Background="{StaticResource LineSoftBrush}"/>
+
+                            <TextBlock Style="{StaticResource SectionHeading}" Text="DOWNLOAD"/>
+                            <TextBlock Text="Dove viene salvata la patch scaricata."
+                                       FontSize="11.5" Foreground="{StaticResource MutedBrush}"
+                                       TextWrapping="Wrap" Margin="0,0,0,8"/>
+                            <TextBlock Text="{Binding SelectedGame.DownloadFolder}" FontSize="11.5"
+                                       Foreground="{StaticResource TextBrush}"
+                                       ToolTip="{Binding SelectedGame.DownloadFolder}"
+                                       TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
+                            <TextBlock Text="Personalizzata per questo gioco" FontSize="11"
+                                       Foreground="{StaticResource TealBrush}" Margin="0,0,0,8"
+                                       Visibility="{Binding SelectedGame.HasCustomFolder, Converter={StaticResource BoolToVis}}"/>
+                            <Button Style="{StaticResource BtnSmall}"
+                                    HorizontalAlignment="Stretch"
+                                    Content="Cambia per questo gioco"
+                                    AutomationProperties.Name="Cambia cartella per questo gioco"
+                                    Command="{Binding ChangeGameFolderCommand}"
+                                    CommandParameter="{Binding SelectedGame}"/>
+                            <Button Style="{StaticResource BtnSmall}"
+                                    HorizontalAlignment="Stretch" Margin="0,6,0,0"
+                                    Content="Usa cartella predefinita"
+                                    AutomationProperties.Name="Usa la cartella predefinita"
+                                    Command="{Binding ResetGameFolderCommand}"
+                                    CommandParameter="{Binding SelectedGame}"
+                                    Visibility="{Binding SelectedGame.HasCustomFolder, Converter={StaticResource BoolToVis}}"/>
+
                             <Border Height="1" Margin="0,18,0,16" Background="{StaticResource LineSoftBrush}"/>
 
                             <TextBlock Style="{StaticResource SectionHeading}" Text="DETTAGLI"/>
@@ -291,7 +406,7 @@
                                 <TextBlock DockPanel.Dock="Right" FontSize="12.5"
                                            Foreground="{StaticResource TealBrush}"
                                            Text="{Binding SelectedGame.InstalledDateLabel}"/>
-                                <TextBlock Text="Installata" FontSize="12.5"
+                                <TextBlock Text="Scaricata" FontSize="12.5"
                                            Foreground="{StaticResource MutedBrush}"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,9"
@@ -311,29 +426,6 @@
                                 <TextBlock Text="Categorie" FontSize="12.5"
                                            Foreground="{StaticResource MutedBrush}"/>
                             </DockPanel>
-
-                            <Border Height="1" Margin="0,10,0,16" Background="{StaticResource LineSoftBrush}"/>
-
-                            <TextBlock Style="{StaticResource SectionHeading}" Text="CARTELLA"/>
-                            <TextBlock Text="{Binding SelectedGame.DownloadFolder}" FontSize="11.5"
-                                       Foreground="{StaticResource MutedBrush}"
-                                       TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
-                            <TextBlock Text="Personalizzata per questo gioco" FontSize="11"
-                                       Foreground="{StaticResource TealBrush}" Margin="0,0,0,8"
-                                       Visibility="{Binding SelectedGame.HasCustomFolder, Converter={StaticResource BoolToVis}}"/>
-                            <Button Style="{StaticResource BtnSmall}"
-                                    HorizontalAlignment="Stretch"
-                                    Content="Cambia per questo gioco"
-                                    AutomationProperties.Name="Cambia cartella per questo gioco"
-                                    Command="{Binding ChangeGameFolderCommand}"
-                                    CommandParameter="{Binding SelectedGame}"/>
-                            <Button Style="{StaticResource BtnSmall}"
-                                    HorizontalAlignment="Stretch" Margin="0,6,0,0"
-                                    Content="Usa cartella predefinita"
-                                    AutomationProperties.Name="Usa la cartella predefinita"
-                                    Command="{Binding ResetGameFolderCommand}"
-                                    CommandParameter="{Binding SelectedGame}"
-                                    Visibility="{Binding SelectedGame.HasCustomFolder, Converter={StaticResource BoolToVis}}"/>
 
                         </StackPanel>
                     </ScrollViewer>

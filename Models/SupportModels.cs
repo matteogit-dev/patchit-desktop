@@ -6,6 +6,12 @@ public sealed class LocalEntry
     public string Version { get; set; } = "";
     public string FilePath { get; set; } = "";
     public string DownloadedAt { get; set; } = "";
+
+    /// <summary>Cartella del gioco in cui è stata copiata la patch.</summary>
+    public string InstallFolder { get; set; } = "";
+
+    /// <summary>Backup creato prima di sovrascrivere i file del gioco.</summary>
+    public string BackupPath { get; set; } = "";
 }
 
 public sealed class LibraryFile
@@ -19,6 +25,9 @@ public sealed class SettingsFile
 
     /// <summary>Cartelle scelte per singoli giochi: id gioco → percorso.</summary>
     public Dictionary<string, string> GameDirectories { get; set; } = new();
+
+    /// <summary>Cartella del gioco (dove installare la patch): id gioco → percorso.</summary>
+    public Dictionary<string, string> GameInstallDirectories { get; set; } = new();
 }
 
 public enum DownloadState
@@ -27,6 +36,15 @@ public enum DownloadState
     Queued,
     Downloading,
     Failed,
+}
+
+public enum IntegrityState
+{
+    Unknown,
+    Checking,
+    Ok,
+    Corrupt,
+    Missing,
 }
 
 public sealed record InstructionItem(int Number, string Text);

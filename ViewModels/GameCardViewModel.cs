@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using PatchIt.Client.Models;
@@ -32,6 +33,91 @@ public sealed partial class GameCardViewModel : ObservableObject
     /// <summary>Vero quando l'utente ha scelto una cartella diversa da quella predefinita.</summary>
     [ObservableProperty]
     private bool hasCustomFolder;
+
+    /// <summary>Cartella del gioco in cui la patch va installata.</summary>
+    [ObservableProperty]
+    private string installFolder = "";
+
+    /// <summary>Cartella in cui la patch è stata effettivamente copiata.</summary>
+    [ObservableProperty]
+    private string installedFolder = "";
+
+    /// <summary>Vero se esiste un backup dei file originali da poter ripristinare.</summary>
+    [ObservableProperty]
+    private bool hasBackup;
+
+    [ObservableProperty]
+    private bool isInstalling;
+
+    [ObservableProperty]
+    private string installMessage = "";
+
+    [ObservableProperty]
+    private IntegrityState integrity;
+
+    [ObservableProperty]
+    private string integrityMessage = "";
+
+    /// <summary>Vero mentre l'hash di questo file viene ricalcolato.</summary>
+    [ObservableProperty]
+    private bool isVerifying;
+
+    public bool CanVerify => IsDownloaded && !IsVerifying;
+
+    public bool HasInstallFolder => InstallFolder.Length > 0;
+
+    public bool IsInstalledInGame => InstalledFolder.Length > 0;
+
+    public bool ShowsInstallMessage => InstallMessage.Length > 0;
+
+    /// <summary>Si può copiare nel gioco solo uno zip scaricato che esiste ancora.</summary>
+    public bool CanInstallInGame =>
+        IsLocal
+        && IsDownloaded
+        && !IsInstalling
+        && LocalFilePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
+        && File.Exists(LocalFilePath);
+
+    public string InstallButtonText => IsInstalledInGame ? "Reinstalla nel gioco" : "Installa nel gioco";
+
+    public string InstallFolderButtonText =>
+        HasInstallFolder ? "Cambia cartella del gioco" : "Scegli cartella del gioco";
+
+    public bool ShowsIntegrity => Integrity != IntegrityState.Unknown || IntegrityMessage.Length > 0;
+
+    public Brush IntegrityBrush => Integrity switch
+    {
+        IntegrityState.Ok => Palette.Teal,
+        IntegrityState.Corrupt or IntegrityState.Missing => Palette.Amber,
+        _ => Palette.Muted,
+    };
+
+    partial void OnInstallFolderChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasInstallFolder));
+        OnPropertyChanged(nameof(InstallFolderButtonText));
+    }
+
+    partial void OnInstalledFolderChanged(string value) =>
+        OnPropertyChanged(nameof(IsInstalledInGame));
+
+    partial void OnInstallMessageChanged(string value) =>
+        OnPropertyChanged(nameof(ShowsInstallMessage));
+
+    partial void OnIsInstallingChanged(bool value) =>
+        OnPropertyChanged(nameof(CanInstallInGame));
+
+    partial void OnIntegrityChanged(IntegrityState value) =>
+        OnPropertyChanged(nameof(ShowsIntegrity));
+
+    partial void OnIsVerifyingChanged(bool value) =>
+        OnPropertyChanged(nameof(CanVerify));
+
+    partial void OnIntegrityMessageChanged(string value) =>
+        OnPropertyChanged(nameof(ShowsIntegrity));
+
+    partial void OnLocalFilePathChanged(string value) =>
+        OnPropertyChanged(nameof(CanInstallInGame));
 
     /// <summary>Scaricata e già allineata al catalogo: non c'è nulla da aggiornare.</summary>
     public bool IsUpToDate => IsDownloaded && !HasUpdate;
@@ -163,6 +249,7 @@ public sealed partial class GameCardViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(DownloadButtonText));
         OnPropertyChanged(nameof(IsUpToDate));
+        OnPropertyChanged(nameof(CanInstallInGame));
     }
 
     partial void OnIsDownloadedChanged(bool value)
@@ -170,6 +257,8 @@ public sealed partial class GameCardViewModel : ObservableObject
         OnPropertyChanged(nameof(DownloadButtonText));
         OnPropertyChanged(nameof(IsUpToDate));
         OnPropertyChanged(nameof(HasInstalledDate));
+        OnPropertyChanged(nameof(CanInstallInGame));
+        OnPropertyChanged(nameof(CanVerify));
     }
 
     partial void OnInstalledAtChanged(string value) =>

@@ -3,7 +3,12 @@ using System.Text.Json;
 
 namespace PatchIt.Client.Services;
 
-public sealed record AppUpdate(string Version, string Url);
+public sealed record AppUpdate(
+    string Version,
+    string Url,
+    string? AssetUrl,
+    string? AssetName,
+    long AssetSize);
 
 /// <summary>
 /// Chiede a GitHub l'ultima release pubblicata e la confronta con la versione
@@ -47,9 +52,37 @@ public sealed class UpdateChecker
 
             var url = root.TryGetProperty("html_url", out var html) ? html.GetString() : null;
 
+            // l'eseguibile della release, per aggiornare senza passare dal browser
+            string? assetUrl = null, assetName = null;
+            long assetSize = 0;
+
+            if (root.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var asset in assets.EnumerateArray())
+                {
+                    if (!asset.TryGetProperty("name", out var nameProp)) continue;
+
+                    var name = nameProp.GetString() ?? "";
+                    if (!name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) continue;
+
+                    if (asset.TryGetProperty("browser_download_url", out var downloadProp))
+                        assetUrl = downloadProp.GetString();
+
+                    assetName = name;
+
+                    if (asset.TryGetProperty("size", out var sizeProp) && sizeProp.TryGetInt64(out var size))
+                        assetSize = size;
+
+                    break;
+                }
+            }
+
             return new AppUpdate(
                 version.Trim().TrimStart('v', 'V'),
-                string.IsNullOrWhiteSpace(url) ? ReleasesPage : url);
+                string.IsNullOrWhiteSpace(url) ? ReleasesPage : url,
+                assetUrl,
+                assetName,
+                assetSize);
         }
         catch
         {

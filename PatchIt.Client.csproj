@@ -8,7 +8,7 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>PatchIT</AssemblyName>
     <RootNamespace>PatchIt.Client</RootNamespace>
-    <Version>1.3.0</Version>
+    <Version>1.4.0</Version>
     <Product>PatchIT</Product>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>

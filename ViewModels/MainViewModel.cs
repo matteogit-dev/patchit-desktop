@@ -99,10 +99,48 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string catalogNote = "";
 
+    [ObservableProperty]
+    private bool isAppUpdating;
+
+    [ObservableProperty]
+    private double appUpdateProgress;
+
+    private AppUpdate? _appUpdate;
+
+    [ObservableProperty]
+    private bool isVerifyingAll;
+
+    [ObservableProperty]
+    private double verifyAllProgress;
+
+    [ObservableProperty]
+    private string verifyAllMessage = "";
+
     public bool HasCatalogNote => CatalogNote.Length > 0;
 
     partial void OnCatalogNoteChanged(string value) =>
         OnPropertyChanged(nameof(HasCatalogNote));
+
+    public bool CanDownloadAppUpdate => HasAppUpdate && !IsAppUpdating;
+
+    public bool CanVerifyAll => !IsVerifyingAll;
+
+    partial void OnIsVerifyingAllChanged(bool value) =>
+        OnPropertyChanged(nameof(CanVerifyAll));
+
+    public string AppUpdateButtonText => IsAppUpdating ? "Aggiornamento in corso…" : AppUpdateLabel;
+
+    partial void OnHasAppUpdateChanged(bool value) =>
+        OnPropertyChanged(nameof(CanDownloadAppUpdate));
+
+    partial void OnIsAppUpdatingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanDownloadAppUpdate));
+        OnPropertyChanged(nameof(AppUpdateButtonText));
+    }
+
+    partial void OnAppUpdateLabelChanged(string value) =>
+        OnPropertyChanged(nameof(AppUpdateButtonText));
 
     public MainViewModel()
     {
@@ -159,7 +197,7 @@ public sealed partial class MainViewModel : ObservableObject
     public string LibraryTitle => CurrentView switch
     {
         "updates" => "Aggiornamenti",
-        "installed" => "Installate",
+        "installed" => "Scaricate",
         _ => "Libreria",
     };
 
@@ -173,7 +211,7 @@ public sealed partial class MainViewModel : ObservableObject
     public string EmptyTitle => CurrentView switch
     {
         "updates" => "Tutto aggiornato",
-        "installed" => "Nessuna patch installata",
+        "installed" => "Nessuna patch scaricata",
         _ => "Nessun titolo trovato",
     };
 
@@ -347,6 +385,12 @@ public sealed partial class MainViewModel : ObservableObject
                 var customFolder = _settings.GetGameDirectory(card.Id);
                 card.DownloadFolder = customFolder ?? DownloadDirectory;
                 card.HasCustomFolder = customFolder is not null;
+
+                card.InstallFolder = _settings.GetGameInstallDirectory(card.Id)
+                    ?? entry?.InstallFolder
+                    ?? "";
+                card.InstalledFolder = entry?.InstallFolder ?? "";
+                card.HasBackup = entry is { BackupPath.Length: > 0 } && Directory.Exists(entry.BackupPath);
             }
 
             IsReady = true;
@@ -634,6 +678,227 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void ChangeGameInstallFolder(GameCardViewModel? card)
+    {
+        if (card is null) return;
+
+        var dialog = new OpenFolderDialog
+        {
+            Title = $"Cartella del gioco per {card.Title}",
+            InitialDirectory = Directory.Exists(card.InstallFolder) ? card.InstallFolder : null,
+            Multiselect = false,
+        };
+
+        if (dialog.ShowDialog() != true) return;
+
+        card.InstallFolder = dialog.FolderName;
+
+        try
+        {
+            _settings.SetGameInstallDirectory(card.Id, dialog.FolderName);
+        }
+        catch
+        {
+            ReportStatus("Cartella del gioco impostata, ma non è stato possibile salvarla.");
+        }
+    }
+
+    /// <summary>Copia lo zip scaricato nella cartella del gioco, salvando prima i file che sostituisce.</summary>
+    [RelayCommand]
+    private async Task InstallInGameAsync(GameCardViewModel? card)
+    {
+        if (card is null || card.IsInstalling || !card.IsLocal) return;
+
+        if (!File.Exists(card.LocalFilePath))
+        {
+            ReportStatus("Il file scaricato non c'è più: scarica di nuovo la patch.");
+            return;
+        }
+
+        if (!PatchInstaller.CanExtract(card.LocalFilePath))
+        {
+            ReportStatus("Il file scaricato non è uno zip: estrailo e copialo seguendo le istruzioni.");
+            return;
+        }
+
+        if (card.InstallFolder.Length == 0)
+        {
+            ChangeGameInstallFolder(card);
+            if (card.InstallFolder.Length == 0) return;
+        }
+
+        var files = PatchInstaller.ListFiles(card.LocalFilePath);
+        if (files.Count == 0)
+        {
+            ReportStatus("Lo zip non contiene file da estrarre.");
+            return;
+        }
+
+        var preview = string.Join("\n", files.Take(6).Select(f => $"• {f}"));
+        if (files.Count > 6) preview += $"\n… e altri {files.Count - 6} file";
+
+        var confirm = MessageBox.Show(
+            $"Verranno copiati {files.Count} file in:\n{card.InstallFolder}\n\n{preview}\n\n" +
+            "I file esistenti vengono salvati in un backup e si possono ripristinare.",
+            "Installa nel gioco",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (confirm != MessageBoxResult.Yes) return;
+
+        card.IsInstalling = true;
+        card.InstallMessage = "Copia dei file in corso…";
+
+        try
+        {
+            var result = await Task.Run(() =>
+                new PatchInstaller().Install(card.LocalFilePath, card.InstallFolder, card.Id));
+
+            _library.MarkInstalled(card.Id, card.InstallFolder, result.BackupDirectory);
+            card.InstalledFolder = card.InstallFolder;
+            card.HasBackup = true;
+            card.InstallMessage = result.Replaced > 0
+                ? $"{result.Files} file copiati, {result.Replaced} sostituiti (backup salvato)."
+                : $"{result.Files} file copiati nella cartella del gioco.";
+        }
+        catch (Exception ex)
+        {
+            card.InstallMessage = $"Errore durante l'installazione: {ex.Message}";
+        }
+        finally
+        {
+            card.IsInstalling = false;
+        }
+    }
+
+    [RelayCommand]
+    private void RestoreInstall(GameCardViewModel? card)
+    {
+        if (card is null || !card.HasBackup) return;
+
+        var backup = _library.Get(card.Id)?.BackupPath ?? "";
+
+        if (backup.Length == 0 || !Directory.Exists(backup))
+        {
+            card.HasBackup = false;
+            ReportStatus("Backup non trovato: è già stato ripristinato o eliminato.");
+            return;
+        }
+
+        var confirm = MessageBox.Show(
+            $"Ripristinare i file originali di \"{card.Title}\"?\nLe modifiche fatte dall'installazione verranno annullate.",
+            "Ripristina backup",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (confirm != MessageBoxResult.Yes) return;
+
+        try
+        {
+            var touched = PatchInstaller.Restore(backup);
+            _library.ClearInstall(card.Id);
+
+            card.HasBackup = false;
+            card.InstalledFolder = "";
+            card.InstallMessage = $"{touched} file ripristinati nella cartella del gioco.";
+        }
+        catch (Exception ex)
+        {
+            card.InstallMessage = $"Errore nel ripristino: {ex.Message}";
+        }
+    }
+
+    /// <summary>Ricalcola l'hash di una patch già scaricata e lo confronta col catalogo.</summary>
+    [RelayCommand]
+    private async Task VerifyFileAsync(GameCardViewModel? card)
+    {
+        if (card is null || !card.IsDownloaded || card.IsVerifying) return;
+
+        card.IsVerifying = true;
+
+        try
+        {
+            card.Integrity = IntegrityState.Checking;
+            card.IntegrityMessage = "Verifica in corso…";
+
+            if (!File.Exists(card.LocalFilePath))
+            {
+                card.Integrity = IntegrityState.Missing;
+                card.IntegrityMessage = "File non trovato sul disco: scarica di nuovo la patch.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(card.Game.Sha256))
+            {
+                card.Integrity = IntegrityState.Unknown;
+                card.IntegrityMessage = "Il catalogo non pubblica l'hash di questa patch: non è verificabile.";
+                return;
+            }
+
+            var actual = await FileIntegrity.HashAsync(card.LocalFilePath);
+
+            if (actual is null)
+            {
+                card.Integrity = IntegrityState.Corrupt;
+                card.IntegrityMessage = "Impossibile leggere il file: potrebbe essere danneggiato.";
+                return;
+            }
+
+            card.Integrity = FileIntegrity.Matches(actual, card.Game.Sha256)
+                ? IntegrityState.Ok
+                : IntegrityState.Corrupt;
+
+            card.IntegrityMessage = card.Integrity == IntegrityState.Ok
+                ? "File integro: l'hash corrisponde al catalogo."
+                : "Il file non corrisponde all'hash del catalogo: scaricalo di nuovo.";
+        }
+        finally
+        {
+            card.IsVerifying = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task VerifyAllAsync()
+    {
+        if (IsVerifyingAll) return;
+
+        var targets = _all
+            .Where(c => c.IsDownloaded && !string.IsNullOrWhiteSpace(c.Game.Sha256))
+            .ToList();
+
+        if (targets.Count == 0)
+        {
+            ReportStatus("Nessun file verificabile: non ci sono download con un hash nel catalogo.");
+            return;
+        }
+
+        IsVerifyingAll = true;
+        VerifyAllProgress = 0;
+        VerifyAllMessage = $"0 di {targets.Count}";
+
+        try
+        {
+            for (var i = 0; i < targets.Count; i++)
+            {
+                await VerifyFileAsync(targets[i]);
+                VerifyAllProgress = (i + 1) * 100.0 / targets.Count;
+                VerifyAllMessage = $"{i + 1} di {targets.Count}";
+            }
+        }
+        finally
+        {
+            IsVerifyingAll = false;
+        }
+
+        var broken = targets.Count(c => c.Integrity is IntegrityState.Corrupt or IntegrityState.Missing);
+
+        ReportStatus(broken == 0
+            ? $"{targets.Count} file verificati: tutto integro."
+            : $"{broken} file su {targets.Count} non sono integri: apri la scheda del gioco per riscaricarli.");
+    }
+
+    [RelayCommand]
     private void OpenDownloadFolder()
     {
         try
@@ -728,6 +993,8 @@ public sealed partial class MainViewModel : ObservableObject
             card.HasUpdate = false;
             card.InstalledAt = "";
             card.LocalFilePath = "";
+            card.InstalledFolder = "";
+            card.HasBackup = false;
             card.SetLocalVersion(null);
         }
 
@@ -829,9 +1096,59 @@ public sealed partial class MainViewModel : ObservableObject
         var update = await _updates.GetLatestAsync(currentText);
         if (update is null) return;
 
-        AppUpdateLabel = $"v{update.Version} disponibile";
+        _appUpdate = update;
+        AppUpdateLabel = $"Aggiorna a v{update.Version}";
         AppUpdateUrl = update.Url;
         HasAppUpdate = true;
+    }
+
+    /// <summary>Scarica l'exe della release, lo installa al riavvio e chiude l'app.</summary>
+    [RelayCommand]
+    private async Task DownloadAppUpdateAsync()
+    {
+        if (IsAppUpdating) return;
+
+        if (_appUpdate is not { AssetUrl.Length: > 0 } update)
+        {
+            OpenUrl(AppUpdateUrl);
+            ReportStatus("Questa release non ha un eseguibile scaricabile: apri la pagina della release.");
+            return;
+        }
+
+        var confirm = MessageBox.Show(
+            $"Scaricare la v{update.Version} e riavviare PatchIT?\n" +
+            "L'app si chiuderà, verrà sostituita e ripartirà da sola.",
+            "Aggiorna PatchIT",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (confirm != MessageBoxResult.Yes) return;
+
+        IsAppUpdating = true;
+        AppUpdateProgress = 0;
+
+        try
+        {
+            var installer = new UpdateInstaller();
+            var progress = new Progress<double>(value => AppUpdateProgress = value);
+            var downloaded = await installer.DownloadAsync(update, progress);
+
+            if (!installer.TryStartSwap(downloaded, out var error))
+            {
+                ReportStatus(error);
+                return;
+            }
+
+            Application.Current.Shutdown();
+        }
+        catch (Exception ex)
+        {
+            ReportStatus($"Aggiornamento non riuscito: {ex.Message}. Puoi scaricarlo dalla pagina della release.");
+        }
+        finally
+        {
+            IsAppUpdating = false;
+        }
     }
 
     private async Task LoadCoversAsync()

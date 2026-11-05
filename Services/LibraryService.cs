@@ -31,6 +31,9 @@ public sealed class LibraryService
     public string? GetVersion(string id) =>
         _entries.TryGetValue(id, out var entry) ? entry.Version : null;
 
+    public LocalEntry? Get(string id) =>
+        _entries.TryGetValue(id, out var entry) ? entry : null;
+
     public IReadOnlyList<LocalEntry> GetAll() =>
         _entries.Values
             .OrderByDescending(e => e.DownloadedAt, StringComparer.Ordinal)
@@ -52,14 +55,39 @@ public sealed class LibraryService
 
     public void Save(string id, string version, string filePath)
     {
+        // un nuovo download non è ancora installato nel gioco, ma il backup
+        // della versione precedente resta valido finché non viene ripristinato
+        _entries.TryGetValue(id, out var existing);
+
         _entries[id] = new LocalEntry
         {
             Id = id,
             Version = version,
             FilePath = filePath,
             DownloadedAt = DateTime.Now.ToString("o"),
+            InstallFolder = existing?.InstallFolder ?? "",
+            BackupPath = existing?.BackupPath ?? "",
         };
 
+        Persist();
+    }
+
+    /// <summary>Registra l'installazione nel gioco e il backup da cui ripristinare.</summary>
+    public void MarkInstalled(string id, string installFolder, string backupPath)
+    {
+        if (!_entries.TryGetValue(id, out var entry)) return;
+
+        entry.InstallFolder = installFolder;
+        entry.BackupPath = backupPath;
+        Persist();
+    }
+
+    public void ClearInstall(string id)
+    {
+        if (!_entries.TryGetValue(id, out var entry)) return;
+
+        entry.InstallFolder = "";
+        entry.BackupPath = "";
         Persist();
     }
 
