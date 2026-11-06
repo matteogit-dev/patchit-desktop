@@ -28,7 +28,18 @@ public sealed class SettingsFile
 
     /// <summary>Cartella del gioco (dove installare la patch): id gioco → percorso.</summary>
     public Dictionary<string, string> GameInstallDirectories { get; set; } = new();
+
+    /// <summary>Dimensione delle card della libreria: "s", "m" o "l".</summary>
+    public string CardSize { get; set; } = "m";
 }
+
+/// <summary>Una voce della palette dei comandi: un gioco, un'azione o una destinazione.</summary>
+public sealed record PaletteItem(
+    string Label,
+    string Detail,
+    string Group,
+    string? GameId = null,
+    string? Action = null);
 
 public enum DownloadState
 {
@@ -46,6 +57,46 @@ public enum IntegrityState
     Corrupt,
     Missing,
 }
+
+public enum ToastKind
+{
+    Success,
+    Info,
+}
+
+/// <summary>Conferma non bloccante mostrata in basso a destra.</summary>
+public sealed record ToastMessage(string Text, ToastKind Kind);
+
+/// <summary>
+/// Una conferma da mostrare dentro la finestra, al posto dei MessageBox di sistema:
+/// stesso tema del resto dell'app, tastiera gestita (↵ conferma, esc annulla).
+/// </summary>
+public sealed class ConfirmRequest
+{
+    /// <summary>Riga piccola sopra il titolo: dice in che area si sta agendo.</summary>
+    public string Eyebrow { get; init; } = "";
+
+    public string Title { get; init; } = "";
+    public string Message { get; init; } = "";
+
+    /// <summary>Percorso o dato concreto su cui si agisce, mostrato in monospaziato.</summary>
+    public string DetailLabel { get; init; } = "DESTINAZIONE";
+    public string Detail { get; init; } = "";
+
+    /// <summary>Elenco completo dei file: la trasparenza vale più dello spazio.</summary>
+    public string FilesLabel { get; init; } = "FILE";
+    public IReadOnlyList<string> Files { get; init; } = [];
+
+    public string Note { get; init; } = "";
+    public string ConfirmText { get; init; } = "Conferma";
+    public string CancelText { get; init; } = "Annulla";
+
+    public bool HasEyebrow => Eyebrow.Length > 0;
+    public bool HasDetail => Detail.Length > 0;
+    public bool HasFiles => Files.Count > 0;
+    public bool HasNote => Note.Length > 0;
+}
+
 
 public sealed record InstructionItem(int Number, string Text);
 

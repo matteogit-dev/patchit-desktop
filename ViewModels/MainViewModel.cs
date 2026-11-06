@@ -116,6 +116,23 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string verifyAllMessage = "";
 
+    /// <summary>Sezione "Impostazioni patch" aperta nella scheda del gioco.</summary>
+    [ObservableProperty]
+    private bool showPatchSettings;
+
+    /// <summary>Dimensione delle card: "s", "m" o "l". Decisa dall'utente e ricordata.</summary>
+    [ObservableProperty]
+    private string cardSize = "m";
+
+    [ObservableProperty]
+    private bool isPaletteOpen;
+
+    [ObservableProperty]
+    private string paletteQuery = "";
+
+    [ObservableProperty]
+    private PaletteItem? paletteSelection;
+
     public bool HasCatalogNote => CatalogNote.Length > 0;
 
     partial void OnCatalogNoteChanged(string value) =>
@@ -161,14 +178,44 @@ public sealed partial class MainViewModel : ObservableObject
             new("updated", "Recenti"),
         ];
 
+        DensityOptions =
+        [
+            new("s", "Piccole"),
+            new("m", "Medie"),
+            new("l", "Grandi"),
+        ];
+
         UpdateActiveSort();
+        UpdateActiveDensity();
     }
+
+    public ObservableCollection<SortOptionViewModel> DensityOptions { get; }
 
     public ObservableCollection<FilterOptionViewModel> Filters { get; }
 
     public ObservableCollection<SortOptionViewModel> SortOptions { get; }
 
     public ObservableCollection<DownloadHistoryItem> DownloadHistory { get; } = [];
+
+    /// <summary>Conferme non bloccanti in basso a destra.</summary>
+    public ObservableCollection<ToastMessage> Toasts { get; } = [];
+
+    /// <summary>Slot finti mostrati mentre il catalogo arriva la prima volta.</summary>
+    public int[] SkeletonSlots { get; } = [1, 2, 3, 4, 5, 6, 7, 8];
+
+    /// <summary>Scaffali della schermata Casa: poche card in evidenza, il resto in libreria.</summary>
+    public ObservableCollection<GameCardViewModel> UpdateShelf { get; } = [];
+
+    public ObservableCollection<GameCardViewModel> NewShelf { get; } = [];
+
+    public ObservableCollection<GameCardViewModel> ProgressShelf { get; } = [];
+
+    public ObservableCollection<GameCardViewModel> InstalledShelf { get; } = [];
+
+    public ObservableCollection<PaletteItem> PaletteResults { get; } = [];
+
+    /// <summary>Quante card mostrare per scaffale prima di rimandare alla libreria.</summary>
+    private const int ShelfSize = 8;
 
     public int GameCount => Games.Count;
 
@@ -183,7 +230,7 @@ public sealed partial class MainViewModel : ObservableObject
     public bool HasStatusMessage => !string.IsNullOrWhiteSpace(StatusMessage);
 
     public bool CanUpdateAll =>
-        CurrentView == "updates"
+        CurrentView is "updates" or "home"
         && !IsQueueRunning
         && _all.Any(c => c.HasUpdate && c.IsLocal);
 
@@ -192,10 +239,87 @@ public sealed partial class MainViewModel : ObservableObject
 
     public bool IsLibraryVisible => CurrentView is "library" or "updates" or "installed";
 
+    public bool IsHomeVisible => CurrentView == "home";
+
+    /// <summary>Casa si mostra solo a catalogo caricato: durante il primo avvio c'è lo scheletro.</summary>
+    public bool IsHomeReady => IsHomeVisible && IsReady;
+
+    /// <summary>Catalogo davvero vuoto: indipendente da ricerca e filtri della libreria.</summary>
+    public bool IsCatalogEmpty => IsReady && _all.Count == 0;
+
     public bool IsSettingsVisible => CurrentView == "settings";
+
+    public bool HasUpdateShelf => UpdateShelf.Count > 0;
+
+    public bool HasNewShelf => NewShelf.Count > 0;
+
+    public bool HasProgressShelf => ProgressShelf.Count > 0;
+
+    public bool HasInstalledShelf => InstalledShelf.Count > 0;
+
+    /// <summary>Larghezza delle card, seguendo la densità scelta.</summary>
+    public double CardWidth => CardSize switch
+    {
+        "s" => 176,
+        "l" => 224,
+        _ => 200,
+    };
+
+    /// <summary>Altezza della copertina: stessa proporzione delle immagini del sito (2.14:1).</summary>
+    public double CoverHeight => Math.Round(CardWidth / 2.14);
+
+    partial void OnCardSizeChanged(string value)
+    {
+        OnPropertyChanged(nameof(CardWidth));
+        OnPropertyChanged(nameof(CoverHeight));
+        UpdateActiveDensity();
+
+        // durante il caricamento il valore arriva dal file: non risalvarlo
+        if (!IsReady) return;
+
+        try
+        {
+            _settings.SetCardSize(value);
+        }
+        catch
+        {
+            // la preferenza è un extra: se non si salva si tiene lo stesso
+        }
+    }
+
+    partial void OnPaletteQueryChanged(string value) => BuildPaletteResults();
+
+    partial void OnIsPaletteOpenChanged(bool value)
+    {
+        if (!value) return;
+
+        PaletteQuery = "";
+        BuildPaletteResults();
+    }
+
+    /// <summary>Primo caricamento: al posto delle card si mostra lo scheletro.</summary>
+    public bool IsFirstLoad => IsLoading && !IsReady;
+
+    /// <summary>Ricarica a griglia già visibile: basta una barra sottile in alto.</summary>
+    public bool IsRefreshing => IsLoading && IsReady;
+
+    partial void OnIsLoadingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsFirstLoad));
+        OnPropertyChanged(nameof(IsRefreshing));
+    }
+
+    partial void OnIsReadyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsFirstLoad));
+        OnPropertyChanged(nameof(IsRefreshing));
+        OnPropertyChanged(nameof(IsHomeReady));
+        OnPropertyChanged(nameof(IsCatalogEmpty));
+    }
 
     public string LibraryTitle => CurrentView switch
     {
+        "home" => "Casa",
         "updates" => "Aggiornamenti",
         "installed" => "Scaricate",
         _ => "Libreria",
@@ -203,24 +327,36 @@ public sealed partial class MainViewModel : ObservableObject
 
     public string LibrarySubtitle => CurrentView switch
     {
+        "home" => HomeSubtitle,
         "updates" => "Patch con una nuova versione disponibile",
         "installed" => "Le patch già scaricate e pronte da installare",
         _ => "Sfoglia il catalogo delle traduzioni",
     };
 
-    public string EmptyTitle => CurrentView switch
-    {
-        "updates" => "Tutto aggiornato",
-        "installed" => "Nessuna patch scaricata",
-        _ => "Nessun titolo trovato",
-    };
+    public string HomeSubtitle => _all.Count == 0
+        ? "Il catalogo delle traduzioni, a colpo d'occhio"
+        : $"{_all.Count} traduzioni · {UpdateCount} da aggiornare · {InstalledCount} scaricate";
 
-    public string EmptyMessage => CurrentView switch
-    {
-        "updates" => "Non ci sono patch da aggiornare.",
-        "installed" => "Scarica una patch dalla libreria e la ritrovi qui.",
-        _ => "Prova a cambiare ricerca o filtro.",
-    };
+    /// <summary>Vero quando c'è un testo di ricerca attivo.</summary>
+    public bool HasSearchTerm => SearchText.Trim().Length > 0;
+
+    public string EmptyTitle => HasSearchTerm
+        ? $"Nessun risultato per «{SearchText.Trim()}»"
+        : CurrentView switch
+        {
+            "updates" => "Tutto aggiornato",
+            "installed" => "Nessuna patch scaricata",
+            _ => "Nessun titolo trovato",
+        };
+
+    public string EmptyMessage => HasSearchTerm
+        ? "Controlla l'ortografia o prova con un altro termine."
+        : CurrentView switch
+        {
+            "updates" => "Non ci sono patch da aggiornare.",
+            "installed" => "Scarica una patch dalla libreria e la ritrovi qui.",
+            _ => "Prova a cambiare ricerca o filtro.",
+        };
 
     public string AppVersion
     {
@@ -244,6 +380,9 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnSearchTextChanged(string value)
     {
         OnPropertyChanged(nameof(CanResetFilters));
+        OnPropertyChanged(nameof(HasSearchTerm));
+        OnPropertyChanged(nameof(EmptyTitle));
+        OnPropertyChanged(nameof(EmptyMessage));
 
         _searchCts?.Cancel();
         _searchCts = new CancellationTokenSource();
@@ -287,12 +426,17 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnCurrentViewChanged(string value)
     {
         OnPropertyChanged(nameof(IsLibraryVisible));
+        OnPropertyChanged(nameof(IsHomeVisible));
+        OnPropertyChanged(nameof(IsHomeReady));
         OnPropertyChanged(nameof(IsSettingsVisible));
         OnPropertyChanged(nameof(LibraryTitle));
         OnPropertyChanged(nameof(LibrarySubtitle));
         OnPropertyChanged(nameof(EmptyTitle));
         OnPropertyChanged(nameof(EmptyMessage));
         OnPropertyChanged(nameof(CanUpdateAll));
+
+        // Impostazioni è una pagina intera: la scheda laterale non ha senso lì
+        if (value == "settings") IsDetailOpen = false;
 
         // ricalcola "file non trovato" ogni volta che si apre Impostazioni
         if (value == "settings") RebuildHistory();
@@ -317,11 +461,23 @@ public sealed partial class MainViewModel : ObservableObject
         ApplyFilter();
     }
 
+    /// <summary>Svuota solo la ricerca, lasciando il filtro scelto.</summary>
+    [RelayCommand]
+    private void ClearSearch()
+    {
+        SearchText = "";
+        ApplyFilter();
+    }
+
     [RelayCommand]
     private void Navigate(string view)
     {
         switch (view)
         {
+            case "home":
+                CurrentView = "home";
+                break;
+
             case "library":
                 if (ActiveFilter is "updates" or "installed") ActiveFilter = "all";
                 CurrentView = "library";
@@ -343,6 +499,34 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>"Vedi tutti" degli scaffali: apre la libreria già filtrata o ordinata.</summary>
+    [RelayCommand]
+    private void OpenShelf(string key)
+    {
+        switch (key)
+        {
+            case "new":
+                SortMode = "updated";
+                CurrentView = "library";
+                ActiveFilter = "all";
+                break;
+
+            case "progress":
+                CurrentView = "library";
+                ActiveFilter = "progress";
+                break;
+
+            case "updates":
+            case "installed":
+                Navigate(key);
+                break;
+
+            default:
+                Navigate("library");
+                break;
+        }
+    }
+
     [RelayCommand]
     private void OpenDetail()
     {
@@ -351,6 +535,118 @@ public sealed partial class MainViewModel : ObservableObject
 
     [RelayCommand]
     private void CloseDetail() => IsDetailOpen = false;
+
+    /// <summary>Apre la scheda del gioco indicato (card o scaffale).</summary>
+    [RelayCommand]
+    private void OpenGame(GameCardViewModel? card)
+    {
+        if (card is null) return;
+
+        SelectedGame = card;
+        IsDetailOpen = true;
+    }
+
+    /// <summary>Scarica direttamente dalla card, senza doverla selezionare prima.</summary>
+    [RelayCommand]
+    private async Task DownloadCard(GameCardViewModel? card)
+    {
+        if (card is null) return;
+
+        SelectedGame = card;
+        await DownloadAsync();
+    }
+
+    /// <summary>Scorre la selezione con le frecce mentre la scheda è aperta.</summary>
+    [RelayCommand]
+    private void MoveSelection(int delta)
+    {
+        if (Games.Count == 0) return;
+
+        var index = SelectedGame is null ? 0 : Games.IndexOf(SelectedGame);
+        if (index < 0) index = 0;
+
+        index = Math.Clamp(index + delta, 0, Games.Count - 1);
+        SelectedGame = Games[index];
+    }
+
+    [RelayCommand]
+    private void TogglePalette() => IsPaletteOpen = !IsPaletteOpen;
+
+    [RelayCommand]
+    private void ClosePalette() => IsPaletteOpen = false;
+
+    [RelayCommand]
+    private void SetDensity(string size) => CardSize = size;
+
+    /// <summary>Esegue la voce scelta nella palette: un gioco o un'azione dell'app.</summary>
+    [RelayCommand]
+    private void RunPalette(PaletteItem? item)
+    {
+        if (item is null) return;
+
+        IsPaletteOpen = false;
+
+        if (item.GameId is { } id)
+        {
+            var card = _all.FirstOrDefault(c => c.Id == id);
+            if (card is null) return;
+
+            if (CurrentView == "settings") CurrentView = "library";
+            SelectedGame = card;
+            IsDetailOpen = true;
+            return;
+        }
+
+        switch (item.Action)
+        {
+            case "library": Navigate("library"); break;
+            case "updates": Navigate("updates"); break;
+            case "installed": Navigate("installed"); break;
+            case "settings": Navigate("settings"); break;
+            case "updateall": if (CanUpdateAll) UpdateAllCommand.Execute(null); break;
+            case "folder": OpenDownloadFolderCommand.Execute(null); break;
+            case "verify": if (CanVerifyAll) VerifyAllCommand.Execute(null); break;
+            case "reload": if (LoadCommand.CanExecute(null)) LoadCommand.Execute(null); break;
+            case "clearcache": ClearCoverCacheCommand.Execute(null); break;
+        }
+    }
+
+    /// <summary>Azioni sempre disponibili nella palette, oltre ai giochi.</summary>
+    private static PaletteItem[] PaletteActions() =>
+    [
+        new("Libreria", "Tutto il catalogo", "Vai a", Action: "library"),
+        new("Aggiornamenti", "Patch con una nuova versione", "Vai a", Action: "updates"),
+        new("Scaricate", "Patch già sul disco", "Vai a", Action: "installed"),
+        new("Impostazioni", "Cartelle e manutenzione", "Vai a", Action: "settings"),
+        new("Aggiorna tutte le patch", "Scarica le nuove versioni in coda", "Azione", Action: "updateall"),
+        new("Apri la cartella dei download", "Esplora i file scaricati", "Azione", Action: "folder"),
+        new("Verifica i file scaricati", "Controlla gli hash rispetto al catalogo", "Azione", Action: "verify"),
+        new("Ricarica il catalogo", "Rileggi l'elenco dal sito", "Azione", Action: "reload"),
+        new("Svuota la cache delle copertine", "Le riscarica al prossimo avvio", "Azione", Action: "clearcache"),
+    ];
+
+    private void BuildPaletteResults()
+    {
+        var term = PaletteQuery.Trim();
+        PaletteResults.Clear();
+
+        foreach (var action in PaletteActions())
+            if (term.Length == 0 || action.Label.Contains(term, StringComparison.OrdinalIgnoreCase))
+                PaletteResults.Add(action);
+
+        var games = term.Length == 0
+            ? _all.Where(c => c.HasUpdate || c.IsDownloaded).Take(4)
+            : _all.Where(c => Matches(c, term)).Take(12);
+
+        foreach (var card in games)
+            PaletteResults.Add(new PaletteItem(
+                card.Title,
+                card.IsDownloaded ? "Nella tua libreria" : card.StatusLabel,
+                "Giochi",
+                card.Id));
+
+        PaletteSelection = PaletteResults.FirstOrDefault();
+    }
 
     [RelayCommand]
     private async Task LoadAsync()
@@ -365,6 +661,7 @@ public sealed partial class MainViewModel : ObservableObject
             _library.Load();
             _settings.Load();
             DownloadDirectory = _settings.DownloadDirectory;
+            CardSize = _settings.CardSize;
 
             var catalog = await _catalog.LoadAsync();
             ApplyCatalogNote(catalog);
@@ -386,9 +683,9 @@ public sealed partial class MainViewModel : ObservableObject
                 card.DownloadFolder = customFolder ?? DownloadDirectory;
                 card.HasCustomFolder = customFolder is not null;
 
-                card.InstallFolder = _settings.GetGameInstallDirectory(card.Id)
-                    ?? entry?.InstallFolder
-                    ?? "";
+                // conta solo una scelta esplicita: il posto in cui la patch fu copiata
+                // l'ultima volta non risponde alla domanda "dove copio adesso?"
+                card.InstallFolder = _settings.GetGameInstallDirectory(card.Id) ?? "";
                 card.InstalledFolder = entry?.InstallFolder ?? "";
                 card.HasBackup = entry is { BackupPath.Length: > 0 } && Directory.Exists(entry.BackupPath);
             }
@@ -396,6 +693,7 @@ public sealed partial class MainViewModel : ObservableObject
             IsReady = true;
             UpdateActiveFilter();
             ApplyFilter();
+            RebuildShelves();
             RaiseCounters();
             RebuildHistory();
 
@@ -413,19 +711,61 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>Conferma aperta in questo momento, se c'è.</summary>
+    [ObservableProperty]
+    private ConfirmRequest? currentDialog;
+
+    private TaskCompletionSource<bool>? _dialogAnswer;
+
+    public bool IsDialogOpen => CurrentDialog is not null;
+
+    partial void OnCurrentDialogChanged(ConfirmRequest? value) =>
+        OnPropertyChanged(nameof(IsDialogOpen));
+
+    /// <summary>Mostra la conferma e attende la risposta, come faceva MessageBox.</summary>
+    private Task<bool> AskAsync(ConfirmRequest request)
+    {
+        _dialogAnswer?.TrySetResult(false);
+        _dialogAnswer = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        CurrentDialog = request;
+
+        return _dialogAnswer.Task;
+    }
+
+    [RelayCommand]
+    private void ConfirmDialog() => AnswerDialog(true);
+
+    [RelayCommand]
+    private void CancelDialog() => AnswerDialog(false);
+
+    private void AnswerDialog(bool answer)
+    {
+        var pending = _dialogAnswer;
+        if (pending is null) return;
+
+        _dialogAnswer = null;
+        CurrentDialog = null;
+        pending.TrySetResult(answer);
+    }
+
     [RelayCommand]
     private async Task DownloadAsync()
     {
-        if (IsDownloading || IsQueueRunning) return;
-        if (SelectedGame is not { } card) return;
+        if (SelectedGame is { } card) await DownloadOneAsync(card);
+    }
+
+    /// <summary>Scarica una patch: falso se annullata o fallita.</summary>
+    private async Task<bool> DownloadOneAsync(GameCardViewModel card)
+    {
+        if (IsDownloading || IsQueueRunning) return false;
 
         if (card.IsExternal)
         {
             OpenUrl(card.Game.DownloadUrl);
-            return;
+            return false;
         }
 
-        if (!card.IsLocal) return;
+        if (!card.IsLocal) return false;
 
         IsDownloading = true;
         _downloadCts = new CancellationTokenSource();
@@ -433,6 +773,8 @@ public sealed partial class MainViewModel : ObservableObject
         card.DownloadStatus = DownloadState.Downloading;
         card.DownloadPercent = 0;
         card.DownloadMessage = "Preparazione del download…";
+
+        var completed = false;
 
         try
         {
@@ -444,8 +786,11 @@ public sealed partial class MainViewModel : ObservableObject
                 ? $"Salvato in {card.DownloadFolder} — hash non pubblicato, file non verificato."
                 : $"Salvato e verificato in {card.DownloadFolder}";
 
+            Notify($"\"{card.Title}\" scaricata in {card.DownloadFolder}.");
+
             RaiseCounters();
             RebuildHistory();
+            completed = true;
         }
         catch (OperationCanceledException)
         {
@@ -463,6 +808,50 @@ public sealed partial class MainViewModel : ObservableObject
             _downloadCts = null;
             IsDownloading = false;
         }
+
+        return completed;
+    }
+
+    /// <summary>Azione unica della scheda: scarica se serve, poi copia nel gioco.</summary>
+    [RelayCommand]
+    private async Task PatchAsync(GameCardViewModel? card)
+    {
+        card ??= SelectedGame;
+        if (card is null || card.IsInstalling) return;
+
+        if (card.IsDownloading)
+        {
+            CancelDownload();
+            return;
+        }
+
+        if (card.IsExternal)
+        {
+            OpenUrl(card.Game.DownloadUrl);
+            return;
+        }
+
+        if (!card.IsLocal) return;
+
+        // senza la cartella del gioco non si può installare: si scopre prima di scaricare
+        if (!EnsureInstallFolder(card)) return;
+
+        if (!card.IsDownloaded || !File.Exists(card.LocalFilePath))
+        {
+            if (!await DownloadOneAsync(card)) return;
+        }
+
+        // prima di copiare si chiede sempre conferma, con la destinazione in chiaro
+        await InstallCoreAsync(card, confirm: true);
+    }
+
+    /// <summary>Senza una cartella valida la destinazione si chiede all'utente, sempre.</summary>
+    private bool EnsureInstallFolder(GameCardViewModel card)
+    {
+        if (Directory.Exists(card.InstallFolder)) return true;
+
+        PickInstallFolder(card);
+        return card.InstallFolder.Length > 0 && Directory.Exists(card.InstallFolder);
     }
 
     /// <summary>Scarica una patch e la registra nella libreria, aggiornando la card.</summary>
@@ -588,6 +977,8 @@ public sealed partial class MainViewModel : ObservableObject
 
             if (failed > 0)
                 ReportStatus($"{failed} patch non aggiornate: controlla la connessione e riprova.");
+            else if (done > 0)
+                Notify($"{done} patch aggiornate.");
         }
     }
 
@@ -622,6 +1013,7 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             _settings.Save(DownloadDirectory);
+            Notify("Cartella di download aggiornata.");
         }
         catch
         {
@@ -652,6 +1044,7 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             _settings.SetGameDirectory(card.Id, dialog.FolderName);
+            Notify($"Cartella salvata per {card.Title}.");
         }
         catch
         {
@@ -670,6 +1063,7 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             _settings.SetGameDirectory(card.Id, null);
+            Notify("Usata la cartella predefinita.");
         }
         catch
         {
@@ -677,8 +1071,11 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>Selettore della cartella del gioco: la destinazione la indica l'utente.</summary>
     [RelayCommand]
-    private void ChangeGameInstallFolder(GameCardViewModel? card)
+    private void ChangeGameInstallFolder(GameCardViewModel? card) => PickInstallFolder(card);
+
+    private void PickInstallFolder(GameCardViewModel? card)
     {
         if (card is null) return;
 
@@ -692,10 +1089,15 @@ public sealed partial class MainViewModel : ObservableObject
         if (dialog.ShowDialog() != true) return;
 
         card.InstallFolder = dialog.FolderName;
+        SaveInstallFolder(card, dialog.FolderName);
+    }
 
+    private void SaveInstallFolder(GameCardViewModel card, string folder)
+    {
         try
         {
-            _settings.SetGameInstallDirectory(card.Id, dialog.FolderName);
+            _settings.SetGameInstallDirectory(card.Id, folder);
+            Notify("Cartella del gioco salvata.");
         }
         catch
         {
@@ -705,7 +1107,10 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>Copia lo zip scaricato nella cartella del gioco, salvando prima i file che sostituisce.</summary>
     [RelayCommand]
-    private async Task InstallInGameAsync(GameCardViewModel? card)
+    private async Task InstallInGameAsync(GameCardViewModel? card) =>
+        await InstallCoreAsync(card, confirm: true);
+
+    private async Task InstallCoreAsync(GameCardViewModel? card, bool confirm)
     {
         if (card is null || card.IsInstalling || !card.IsLocal) return;
 
@@ -721,11 +1126,7 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         }
 
-        if (card.InstallFolder.Length == 0)
-        {
-            ChangeGameInstallFolder(card);
-            if (card.InstallFolder.Length == 0) return;
-        }
+        if (!EnsureInstallFolder(card)) return;
 
         var files = PatchInstaller.ListFiles(card.LocalFilePath);
         if (files.Count == 0)
@@ -734,17 +1135,22 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         }
 
-        var preview = string.Join("\n", files.Take(6).Select(f => $"• {f}"));
-        if (files.Count > 6) preview += $"\n… e altri {files.Count - 6} file";
+        if (confirm)
+        {
+            var proceed = await AskAsync(new ConfirmRequest
+            {
+                Eyebrow = "INSTALLAZIONE NEL GIOCO",
+                Title = $"Copia {files.Count} file",
+                Message = $"I file della patch di \"{card.Title}\" verranno scritti nella cartella qui sotto.",
+                Detail = card.InstallFolder,
+                FilesLabel = $"FILE ({files.Count})",
+                Files = files,
+                Note = "I file esistenti vengono salvati in un backup, ripristinabile da Impostazioni patch.",
+                ConfirmText = "Installa",
+            });
 
-        var confirm = MessageBox.Show(
-            $"Verranno copiati {files.Count} file in:\n{card.InstallFolder}\n\n{preview}\n\n" +
-            "I file esistenti vengono salvati in un backup e si possono ripristinare.",
-            "Installa nel gioco",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
-
-        if (confirm != MessageBoxResult.Yes) return;
+            if (!proceed) return;
+        }
 
         card.IsInstalling = true;
         card.InstallMessage = "Copia dei file in corso…";
@@ -760,6 +1166,8 @@ public sealed partial class MainViewModel : ObservableObject
             card.InstallMessage = result.Replaced > 0
                 ? $"{result.Files} file copiati, {result.Replaced} sostituiti (backup salvato)."
                 : $"{result.Files} file copiati nella cartella del gioco.";
+
+            Notify($"Patch installata in {card.InstallFolder}.");
         }
         catch (Exception ex)
         {
@@ -772,7 +1180,7 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void RestoreInstall(GameCardViewModel? card)
+    private async Task RestoreInstall(GameCardViewModel? card)
     {
         if (card is null || !card.HasBackup) return;
 
@@ -785,13 +1193,17 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         }
 
-        var confirm = MessageBox.Show(
-            $"Ripristinare i file originali di \"{card.Title}\"?\nLe modifiche fatte dall'installazione verranno annullate.",
-            "Ripristina backup",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
+        var proceed = await AskAsync(new ConfirmRequest
+        {
+            Eyebrow = "RIPRISTINO",
+            Title = "Rimetti i file originali",
+            Message = $"Le modifiche fatte dall'installazione di \"{card.Title}\" verranno annullate e i file torneranno com'erano.",
+            Detail = card.InstalledFolder.Length > 0 ? card.InstalledFolder : backup,
+            Note = "Il backup viene consumato: dopo il ripristino non è più disponibile.",
+            ConfirmText = "Ripristina",
+        });
 
-        if (confirm != MessageBoxResult.Yes) return;
+        if (!proceed) return;
 
         try
         {
@@ -801,6 +1213,7 @@ public sealed partial class MainViewModel : ObservableObject
             card.HasBackup = false;
             card.InstalledFolder = "";
             card.InstallMessage = $"{touched} file ripristinati nella cartella del gioco.";
+            Notify($"File originali ripristinati ({touched}).");
         }
         catch (Exception ex)
         {
@@ -851,6 +1264,11 @@ public sealed partial class MainViewModel : ObservableObject
             card.IntegrityMessage = card.Integrity == IntegrityState.Ok
                 ? "File integro: l'hash corrisponde al catalogo."
                 : "Il file non corrisponde all'hash del catalogo: scaricalo di nuovo.";
+
+            if (card.Integrity == IntegrityState.Ok)
+                Notify($"{card.Title}: file integro.");
+            else
+                Notify($"{card.Title}: il file non corrisponde al catalogo.", ToastKind.Info);
         }
         finally
         {
@@ -893,9 +1311,10 @@ public sealed partial class MainViewModel : ObservableObject
 
         var broken = targets.Count(c => c.Integrity is IntegrityState.Corrupt or IntegrityState.Missing);
 
-        ReportStatus(broken == 0
-            ? $"{targets.Count} file verificati: tutto integro."
-            : $"{broken} file su {targets.Count} non sono integri: apri la scheda del gioco per riscaricarli.");
+        if (broken == 0)
+            Notify($"{targets.Count} file verificati: tutto integro.");
+        else
+            ReportStatus($"{broken} file su {targets.Count} non sono integri: apri la scheda del gioco per riscaricarli.");
     }
 
     [RelayCommand]
@@ -972,18 +1391,23 @@ public sealed partial class MainViewModel : ObservableObject
 
         if (failed > 0)
             ReportStatus($"{failed} copertine non eliminate: sono ancora in uso.");
+        else
+            Notify("Copertine ricaricate.");
     }
 
     [RelayCommand]
-    private void ResetLibrary()
+    private async Task ResetLibrary()
     {
-        var result = MessageBox.Show(
-            "Vuoi cancellare la cronologia dei download?\nLe patch già scaricate sul disco non verranno eliminate.",
-            "Reset libreria",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
+        var proceed = await AskAsync(new ConfirmRequest
+        {
+            Eyebrow = "MANUTENZIONE",
+            Title = "Azzera la cronologia",
+            Message = "L'app dimenticherà cosa hai scaricato e dove l'hai installato.",
+            Note = "Le patch già scaricate sul disco non vengono toccate.",
+            ConfirmText = "Azzera",
+        });
 
-        if (result != MessageBoxResult.Yes) return;
+        if (!proceed) return;
 
         _library.Clear();
 
@@ -999,6 +1423,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
 
         RebuildHistory();
+        Notify("Cronologia dei download azzerata.");
         RaiseCounters();
         ApplyFilter();
     }
@@ -1020,17 +1445,21 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>Elimina una traduzione: via dalla libreria e file tolto dal disco.</summary>
     [RelayCommand]
-    private void RemoveInstalled(GameCardViewModel? card)
+    private async Task RemoveInstalled(GameCardViewModel? card)
     {
         if (card is null || !card.IsDownloaded) return;
 
-        var result = MessageBox.Show(
-            $"Vuoi eliminare \"{card.Title}\" dalla libreria e dal disco?\nIl file scaricato verrà cancellato.",
-            "Elimina traduzione",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
+        var proceed = await AskAsync(new ConfirmRequest
+        {
+            Eyebrow = "LIBRERIA",
+            Title = "Rimuovi la traduzione",
+            Message = $"\"{card.Title}\" esce dalla libreria e il file scaricato viene cancellato dal disco. La patch già copiata nel gioco non viene toccata.",
+            DetailLabel = "FILE DA ELIMINARE",
+            Detail = card.LocalFilePath,
+            ConfirmText = "Rimuovi",
+        });
 
-        if (result != MessageBoxResult.Yes) return;
+        if (!proceed) return;
 
         var path = card.LocalFilePath;
         _library.Remove(card.Id);
@@ -1052,6 +1481,8 @@ public sealed partial class MainViewModel : ObservableObject
 
         if (!deleted)
             ReportStatus("Voce rimossa, ma il file non è stato eliminato: è in uso o non hai i permessi.");
+        else
+            Notify($"\"{card.Title}\" eliminata dal disco.");
     }
 
     /// <summary>Cancella il file scaricato e l'eventuale parziale. False se qualcosa è andato storto.</summary>
@@ -1078,6 +1509,24 @@ public sealed partial class MainViewModel : ObservableObject
     private void DismissStatus() => StatusMessage = "";
 
     private void ReportStatus(string message) => StatusMessage = message;
+
+    private static readonly TimeSpan ToastLifetime = TimeSpan.FromSeconds(4.5);
+
+    /// <summary>Conferma un'azione riuscita senza interrompere quello che si sta facendo.</summary>
+    private void Notify(string message) => Notify(message, ToastKind.Success);
+
+    private void Notify(string message, ToastKind kind)
+    {
+        var toast = new ToastMessage(message, kind);
+        Toasts.Insert(0, toast);
+        _ = RemoveToastLaterAsync(toast);
+    }
+
+    private async Task RemoveToastLaterAsync(ToastMessage toast)
+    {
+        await Task.Delay(ToastLifetime);
+        Toasts.Remove(toast);
+    }
 
     /// <summary>Segnala da quando è la copia locale quando la rete non risponde.</summary>
     private void ApplyCatalogNote(CatalogResult catalog)
@@ -1115,14 +1564,17 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         }
 
-        var confirm = MessageBox.Show(
-            $"Scaricare la v{update.Version} e riavviare PatchIT?\n" +
-            "L'app si chiuderà, verrà sostituita e ripartirà da sola.",
-            "Aggiorna PatchIT",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
+        var proceed = await AskAsync(new ConfirmRequest
+        {
+            Eyebrow = "AGGIORNAMENTO",
+            Title = $"Aggiorna a v{update.Version}",
+            Message = "PatchIT scarica la nuova versione, si chiude, viene sostituita e riparte da sola.",
+            Note = "Se il download si interrompe non viene applicato nulla.",
+            ConfirmText = "Aggiorna e riavvia",
+            CancelText = "Più tardi",
+        });
 
-        if (confirm != MessageBoxResult.Yes) return;
+        if (!proceed) return;
 
         IsAppUpdating = true;
         AppUpdateProgress = 0;
@@ -1217,12 +1669,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         var term = SearchText.Trim();
         if (term.Length > 0)
-        {
-            query = query.Where(g =>
-                g.Title.Contains(term, StringComparison.OrdinalIgnoreCase) ||
-                g.Description.Contains(term, StringComparison.OrdinalIgnoreCase) ||
-                g.Game.Tags.Any(t => t.Contains(term, StringComparison.OrdinalIgnoreCase)));
-        }
+            query = query.Where(g => Matches(g, term));
 
         query = SortMode switch
         {
@@ -1254,6 +1701,46 @@ public sealed partial class MainViewModel : ObservableObject
             option.IsActive = option.Key == SortMode;
     }
 
+    private void UpdateActiveDensity()
+    {
+        foreach (var option in DensityOptions)
+            option.IsActive = option.Key == CardSize;
+    }
+
+    /// <summary>Ricerca condivisa fra libreria e palette.</summary>
+    private static bool Matches(GameCardViewModel card, string term) =>
+        card.Title.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+        card.Description.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+        card.Game.Tags.Any(t => t.Contains(term, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Riempie gli scaffali della schermata Casa con i dati già caricati.</summary>
+    private void RebuildShelves()
+    {
+        UpdateShelf.Clear();
+        NewShelf.Clear();
+        ProgressShelf.Clear();
+        InstalledShelf.Clear();
+
+        foreach (var card in _all.Where(c => c.HasUpdate && c.IsLocal).Take(ShelfSize))
+            UpdateShelf.Add(card);
+
+        foreach (var card in _all
+                     .OrderByDescending(c => c.Game.UpdatedDate, StringComparer.Ordinal)
+                     .Take(ShelfSize))
+            NewShelf.Add(card);
+
+        foreach (var card in _all.Where(c => c.Game.Status == "progress").Take(ShelfSize))
+            ProgressShelf.Add(card);
+
+        foreach (var card in _all.Where(c => c.IsDownloaded).Take(ShelfSize))
+            InstalledShelf.Add(card);
+
+        OnPropertyChanged(nameof(HasUpdateShelf));
+        OnPropertyChanged(nameof(HasNewShelf));
+        OnPropertyChanged(nameof(HasProgressShelf));
+        OnPropertyChanged(nameof(HasInstalledShelf));
+    }
+
     private void RaiseCounters()
     {
         foreach (var filter in Filters)
@@ -1269,10 +1756,15 @@ public sealed partial class MainViewModel : ObservableObject
             };
         }
 
+        RebuildShelves();
+
         OnPropertyChanged(nameof(GameCount));
         OnPropertyChanged(nameof(UpdateCount));
         OnPropertyChanged(nameof(InstalledCount));
         OnPropertyChanged(nameof(CanUpdateAll));
+        OnPropertyChanged(nameof(HomeSubtitle));
+        OnPropertyChanged(nameof(IsCatalogEmpty));
+        OnPropertyChanged(nameof(LibrarySubtitle));
     }
 
     private void RebuildHistory()

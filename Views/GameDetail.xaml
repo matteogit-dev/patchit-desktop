@@ -5,10 +5,10 @@
 
     <Grid>
         <!-- Stato vuoto -->
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24"
                     Visibility="{Binding HasSelection, Converter={StaticResource InvBoolToVis}}">
             <TextBlock Text="Seleziona un titolo dalla libreria"
-                       FontSize="16" FontWeight="SemiBold" TextAlignment="Center"/>
+                       FontSize="15" FontWeight="SemiBold" TextAlignment="Center"/>
         </StackPanel>
 
         <Grid Visibility="{Binding HasSelection, Converter={StaticResource BoolToVis}}">
@@ -17,420 +17,374 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- ========== Hero ========== -->
-            <Grid Grid.Row="0" Height="210">
-                <Border CornerRadius="21,21,0,0" Background="{StaticResource CoverFallbackBrush}"/>
-
-                <Border CornerRadius="21,21,0,0" Opacity="0.25">
+            <!-- ========== Hero: la copertina è l'intestazione ========== -->
+            <Grid Grid.Row="0" Height="392">
+                <Border Background="{StaticResource CoverFallbackBrush}"/>
+                <Border>
                     <Border.Background>
                         <ImageBrush ImageSource="{Binding SelectedGame.Cover}" Stretch="UniformToFill"/>
                     </Border.Background>
                 </Border>
-
-                <Border CornerRadius="21,21,0,0">
+                <Border Background="{StaticResource ArtScrimBrush}"/>
+                <Border>
                     <Border.Background>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                            <GradientStop Color="#F20B0D12" Offset="0"/>
-                            <GradientStop Color="#B30B0D12" Offset="0.5"/>
-                            <GradientStop Color="#590B0D12" Offset="1"/>
+                            <GradientStop Color="#CC0A0B0D" Offset="0"/>
+                            <GradientStop Color="#730A0B0D" Offset="0.44"/>
+                            <GradientStop Color="#000A0B0D" Offset="0.72"/>
                         </LinearGradientBrush>
                     </Border.Background>
                 </Border>
 
-                <Border CornerRadius="21,21,0,0" Background="{StaticResource DetailFadeBrush}"/>
+                <Button Style="{StaticResource TextLink}"
+                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,26,34,0"
+                        Padding="0,2"
+                        Content="Chiudi  ✕"
+                        AutomationProperties.Name="Chiudi la scheda"
+                        Command="{Binding CloseDetailCommand}"/>
 
-                <Grid Margin="34,0,34,20">
+                <Grid VerticalAlignment="Bottom" Margin="40,0,34,26">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0" VerticalAlignment="Bottom" Margin="0,0,26,0">
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,11">
-                            <Border Padding="10,4" CornerRadius="999"
-                                    Background="{Binding SelectedGame.StatusDimBrush}">
-                                <TextBlock Text="{Binding SelectedGame.StatusLabel}" FontSize="11.5"
-                                           FontWeight="SemiBold"
-                                           Foreground="{Binding SelectedGame.StatusBrush}"/>
-                            </Border>
-
-                            <Border Margin="8,0,0,0" Padding="10,4" CornerRadius="999"
-                                    Background="{StaticResource ChipBrush}"
-                                    Visibility="{Binding SelectedGame.HasVersion, Converter={StaticResource BoolToVis}}">
-                                <TextBlock Text="{Binding SelectedGame.Version}" FontSize="11.5"
-                                           Foreground="{StaticResource MutedBrush}"/>
-                            </Border>
-
-                            <Border Margin="8,0,0,0" Padding="10,4" CornerRadius="999"
-                                    Background="{StaticResource AmberDimBrush}"
-                                    Visibility="{Binding SelectedGame.HasUpdate, Converter={StaticResource BoolToVis}}">
-                                <TextBlock Text="Aggiornamento disponibile" FontSize="11.5"
-                                           FontWeight="SemiBold"
-                                           Foreground="{StaticResource AmberBrush}"/>
-                            </Border>
-                        </StackPanel>
-
+                    <StackPanel Grid.Column="0" MaxWidth="720">
+                        <TextBlock Text="{Binding LibraryTitle}" FontSize="10"
+                                   Foreground="{StaticResource MutedBrush}"/>
                         <TextBlock Text="{Binding SelectedGame.Title}"
-                                   FontSize="31" FontWeight="SemiBold"
+                                   FontSize="38" FontWeight="Light"
                                    FontFamily="{StaticResource DisplayFont}"
-                                   TextWrapping="Wrap" MaxWidth="680" HorizontalAlignment="Left"/>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,7,0,0">
-                            <TextBlock Style="{StaticResource MutedText}"
-                                       Text="{Binding SelectedGame.UpdatedFull}"
+                                   TextWrapping="Wrap" Margin="0,10,0,0"
+                                   ToolTip="{Binding SelectedGame.Title}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                            <TextBlock Text="{Binding SelectedGame.StatusLabel}" FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="{Binding SelectedGame.StatusBrush}"/>
+                            <TextBlock Text="{Binding SelectedGame.Version}" FontSize="11"
+                                       Foreground="{StaticResource MutedBrush}" Margin="14,0,0,0"
+                                       Visibility="{Binding SelectedGame.HasVersion, Converter={StaticResource BoolToVis}}"/>
+                            <TextBlock Text="{Binding SelectedGame.UpdatedFull}" FontSize="11"
+                                       Foreground="{StaticResource MutedBrush}" Margin="14,0,0,0"
                                        Visibility="{Binding SelectedGame.HasUpdatedDate, Converter={StaticResource BoolToVis}}"/>
-                            <TextBlock Style="{StaticResource MutedText}" Margin="16,0,0,0"
-                                       Visibility="{Binding SelectedGame.HasTags, Converter={StaticResource BoolToVis}}"
-                                       Text="{Binding SelectedGame.TagsLabel}"/>
+                            <TextBlock Text="{Binding SelectedGame.ProgressLabel}" FontSize="11"
+                                       Foreground="{StaticResource MutedBrush}" Margin="14,0,0,0"
+                                       Visibility="{Binding SelectedGame.ShowProgress, Converter={StaticResource BoolToVis}}"/>
                         </StackPanel>
                     </StackPanel>
 
-                    <Border Grid.Column="1" Width="232" Height="130" CornerRadius="12"
-                            VerticalAlignment="Bottom"
-                            Background="{StaticResource SurfaceHiBrush}"
-                            BorderBrush="#33FFFFFF" BorderThickness="1">
-                        <Border CornerRadius="11">
-                            <Border.Background>
-                                <ImageBrush ImageSource="{Binding SelectedGame.Cover}"
-                                            Stretch="UniformToFill"/>
-                            </Border.Background>
-                        </Border>
-                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Bottom" Margin="24,0,0,0">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Style="{StaticResource BtnPrimary}"
+                                    Content="Scarica e installa"
+                                    AutomationProperties.Name="Scarica e installa"
+                                    Command="{Binding PatchCommand}"
+                                    CommandParameter="{Binding SelectedGame}"
+                                    IsEnabled="{Binding SelectedGame.DownloadEnabled}"/>
+                            <Button Style="{StaticResource BtnGhost}" Content="Pagina Steam"
+                                    Margin="10,0,0,0"
+                                    Visibility="{Binding SelectedGame.HasSteam, Converter={StaticResource BoolToVis}}"
+                                    Command="{Binding OpenUrlCommand}"
+                                    CommandParameter="{Binding SelectedGame.SteamUrl}"/>
+                        </StackPanel>
+                        <TextBlock Text="Un solo gesto: scarica, verifica l'hash e copia i file nella cartella che indichi tu. Quelli sostituiti restano in un backup, ripristinabile."
+                                   FontSize="10.5" Foreground="{StaticResource MutedSoftBrush}"
+                                   TextAlignment="Right" TextWrapping="Wrap" MaxWidth="520"
+                                   Margin="0,10,0,0"/>
+                    </StackPanel>
                 </Grid>
             </Grid>
 
-            <!-- ========== Corpo: contenuti + pannello azioni ========== -->
-            <Grid Grid.Row="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="330"/>
-                </Grid.ColumnDefinitions>
+            <!-- ========== Corpo ========== -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <Grid Margin="40,30,34,44">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="330"/>
+                    </Grid.ColumnDefinitions>
 
-                <!-- Contenuti scrollabili -->
-                <Grid Grid.Column="0">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto"
-                                  Visibility="{Binding SelectedGame.HasDetailsContent, Converter={StaticResource BoolToVis}}">
-                        <StackPanel Margin="34,22,34,38">
+                    <!-- Colonna editoriale -->
+                    <StackPanel Grid.Column="0" Margin="0,0,56,0">
+                        <TextBlock Text="{Binding SelectedGame.Description}"
+                                   FontSize="13.5" LineHeight="23"
+                                   Foreground="{StaticResource BodyTextBrush}"
+                                   TextWrapping="Wrap" MaxWidth="720"
+                                   Visibility="{Binding SelectedGame.HasDescription, Converter={StaticResource BoolToVis}}"/>
 
-                        <TextBlock FontSize="14.5" LineHeight="23" Foreground="#C9CDD6"
-                                   Visibility="{Binding SelectedGame.HasDescription, Converter={StaticResource BoolToVis}}"
-                                   Text="{Binding SelectedGame.Description}"/>
-
-                        <!-- Istruzioni -->
-                        <StackPanel Margin="0,28,0,0"
+                        <StackPanel Margin="0,30,0,0"
                                     Visibility="{Binding SelectedGame.HasInstructions, Converter={StaticResource BoolToVis}}">
                             <TextBlock Style="{StaticResource SectionHeading}" Text="COME INSTALLARE"/>
                             <ItemsControl ItemsSource="{Binding SelectedGame.Instructions}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <DockPanel Margin="0,0,0,13">
-                                            <Border DockPanel.Dock="Left" Width="26" Height="26"
-                                                    CornerRadius="999"
-                                                    Background="{StaticResource SurfaceHiBrush}"
-                                                    BorderBrush="{StaticResource LineSoftBrush}"
-                                                    BorderThickness="1"
-                                                    Margin="0,1,12,0">
-                                                <TextBlock Text="{Binding Number}" FontSize="11.5"
-                                                           FontWeight="SemiBold"
-                                                           Foreground="{StaticResource TealBrush}"
-                                                           HorizontalAlignment="Center"
-                                                           VerticalAlignment="Center"/>
-                                            </Border>
-                                            <TextBlock Text="{Binding Text}" VerticalAlignment="Center"
-                                                       FontSize="13.5" Foreground="#C9CDD6"/>
-                                        </DockPanel>
+                                        <Grid Margin="0,0,0,1">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="34"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.ColumnSpan="2" Height="1" VerticalAlignment="Bottom"
+                                                    Background="{StaticResource LineSoftBrush}"/>
+                                            <TextBlock Grid.Column="0" Text="{Binding Number}" FontSize="10"
+                                                       FontFamily="Cascadia Mono, Consolas"
+                                                       Foreground="{StaticResource MutedSoftBrush}"
+                                                       Margin="0,13,0,0"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Text}"
+                                                       FontSize="13" Foreground="{StaticResource BodyTextBrush}"
+                                                       TextWrapping="Wrap" Margin="0,10,0,13"/>
+                                        </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </StackPanel>
 
-                        <!-- Changelog -->
-                        <StackPanel Margin="0,26,0,0"
+                        <StackPanel Margin="0,30,0,0"
                                     Visibility="{Binding SelectedGame.HasChangelog, Converter={StaticResource BoolToVis}}">
                             <TextBlock Style="{StaticResource SectionHeading}" Text="CHANGELOG"/>
                             <ItemsControl ItemsSource="{Binding SelectedGame.Changelog}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border BorderThickness="1"
-                                                CornerRadius="10" Padding="14,10" Margin="0,0,0,8">
-                                            <Border.Style>
-                                                <Style TargetType="Border">
-                                                    <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
-                                                    <Setter Property="BorderBrush" Value="{StaticResource LineSoftBrush}"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsLast}" Value="True">
-                                                            <Setter Property="Background" Value="#152725"/>
-                                                            <Setter Property="BorderBrush" Value="#2E5E5A"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Border.Style>
-                                            <StackPanel>
-                                                <DockPanel>
-                                                    <TextBlock DockPanel.Dock="Right" FontSize="11.5"
-                                                               Foreground="{StaticResource MutedSoftBrush}"
-                                                               Text="{Binding Date}"/>
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <TextBlock FontSize="12" FontWeight="SemiBold"
-                                                                   Foreground="{StaticResource AmberBrush}"
-                                                                   Text="{Binding Version}"/>
-                                                        <Border Margin="8,0,0,0" Padding="7,1" CornerRadius="999"
-                                                                Background="{StaticResource AmberDimBrush}"
-                                                                VerticalAlignment="Center"
-                                                                Visibility="{Binding IsNew, Converter={StaticResource BoolToVis}}">
-                                                            <TextBlock Text="NUOVA" FontSize="9.5" FontWeight="SemiBold"
-                                                                       Foreground="{StaticResource AmberBrush}"/>
-                                                        </Border>
-                                                    </StackPanel>
-                                                </DockPanel>
-                                                <TextBlock Margin="0,4,0,0" FontSize="13"
-                                                           Foreground="#C9CDD6"
-                                                           Text="{Binding Note}"/>
-                                            </StackPanel>
-                                        </Border>
+                                        <Grid Margin="0,0,0,1">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.ColumnSpan="3" Height="1" VerticalAlignment="Bottom"
+                                                    Background="{StaticResource LineSoftBrush}"/>
+                                            <TextBlock Grid.Column="0" Text="{Binding Version}" FontSize="11.5"
+                                                       FontWeight="SemiBold" Margin="0,10,14,10"
+                                                       Foreground="{StaticResource TextBrush}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Note}" FontSize="12.5"
+                                                       TextWrapping="Wrap" Margin="0,10,14,10"
+                                                       Foreground="{StaticResource MutedBrush}"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding Date}" FontSize="10.5"
+                                                       Margin="0,12,0,10"
+                                                       Foreground="{StaticResource MutedSoftBrush}"/>
+                                        </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </StackPanel>
 
-                    </StackPanel>
-                    </ScrollViewer>
+                        <StackPanel Margin="0,4,0,0"
+                                    Visibility="{Binding SelectedGame.HasDetailsContent, Converter={StaticResource InvBoolToVis}}">
+                            <TextBlock Text="Nessun dettaglio disponibile" FontSize="13.5" FontWeight="SemiBold"
+                                       Foreground="{StaticResource MutedBrush}"/>
+                        </StackPanel>
 
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="40"
-                                Visibility="{Binding SelectedGame.HasDetailsContent, Converter={StaticResource InvBoolToVis}}">
-                        <Border Width="60" Height="60" CornerRadius="18"
-                                Background="{StaticResource SurfaceHiBrush}"
-                                HorizontalAlignment="Center" Margin="0,0,0,16">
-                            <TextBlock Text="⌕" FontSize="26" Foreground="{StaticResource MutedSoftBrush}"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <TextBlock Text="Nessun dettaglio disponibile" FontSize="16" FontWeight="SemiBold"
-                                   TextAlignment="Center"/>
-                        <TextBlock Text="Questo titolo non ha ancora descrizione o istruzioni."
-                                   FontSize="12.5" Foreground="{StaticResource MutedBrush}"
-                                   TextAlignment="Center" Margin="0,6,0,0"/>
-                    </StackPanel>
-                </Grid>
+                        <!-- Impostazioni patch: richiudibili -->
+                        <Border Height="1" Margin="0,34,0,14" Background="{StaticResource LineSoftBrush}"/>
 
-                <!-- Pannello azioni fisso -->
-                <Border Grid.Column="1"
-                        Background="#11151D"
-                        BorderBrush="{StaticResource LineSoftBrush}"
-                        BorderThickness="1,0,0,0"
-                        CornerRadius="0,0,21,0">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="22,20,22,24">
+                        <ToggleButton Style="{StaticResource SectionToggle}"
+                                      Content="Impostazioni patch"
+                                      AutomationProperties.Name="Impostazioni patch"
+                                      HorizontalAlignment="Left"
+                                      IsChecked="{Binding ShowPatchSettings, Mode=TwoWay}"/>
 
-                            <TextBlock Style="{StaticResource SectionHeading}" Text="PATCH"/>
+                        <StackPanel Margin="0,16,0,0" MaxWidth="720"
+                                    Visibility="{Binding ShowPatchSettings, Converter={StaticResource BoolToVis}}">
 
-                            <Border Margin="0,0,0,14" Padding="11,8" CornerRadius="9"
-                                    Background="{StaticResource AmberDimBrush}"
-                                    Visibility="{Binding SelectedGame.HasUpdate, Converter={StaticResource BoolToVis}}">
-                                <TextBlock Text="Disponibile una nuova versione" FontSize="11.5"
-                                           FontWeight="SemiBold"
-                                           Foreground="{StaticResource AmberBrush}"/>
-                            </Border>
-
-                            <!-- Avanzamento traduzione -->
-                            <StackPanel Margin="0,2,0,16"
-                                        Visibility="{Binding SelectedGame.ShowProgress, Converter={StaticResource BoolToVis}}">
-                                <DockPanel Margin="0,0,0,7">
-                                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource MutedText}"
-                                               Text="{Binding SelectedGame.ProgressLabel}"/>
-                                    <TextBlock Text="Avanzamento" FontSize="12" FontWeight="SemiBold"
-                                               Foreground="{StaticResource MutedBrush}"/>
-                                </DockPanel>
-                                <ProgressBar Value="{Binding SelectedGame.ProgressValue, Mode=OneWay}"
-                                             Maximum="100"/>
-                            </StackPanel>
-
-                            <Button Style="{StaticResource BtnPrimary}"
-                                    HorizontalAlignment="Stretch"
-                                    Command="{Binding DownloadCommand}"
-                                    IsEnabled="{Binding SelectedGame.DownloadEnabled}"
-                                    Content="{Binding SelectedGame.DownloadButtonText}"/>
-
-                            <Button Style="{StaticResource BtnGhost}"
-                                    HorizontalAlignment="Stretch"
-                                    Margin="0,8,0,0"
-                                    Content="Pagina Steam"
-                                    Visibility="{Binding SelectedGame.HasSteam, Converter={StaticResource BoolToVis}}"
-                                    Command="{Binding OpenUrlCommand}"
-                                    CommandParameter="{Binding SelectedGame.SteamUrl}"/>
-
-                            <!-- Stato download (per gioco) -->
-                            <StackPanel Margin="0,15,0,0"
-                                        Visibility="{Binding SelectedGame.ShowsDownloadStatus, Converter={StaticResource BoolToVis}}">
-                                <ProgressBar Value="{Binding SelectedGame.DownloadPercent, Mode=OneWay}"
-                                             Maximum="100"
-                                             Foreground="{StaticResource AmberBrush}"/>
-                                <TextBlock Margin="0,8,0,0" FontSize="12"
-                                           Foreground="{StaticResource MutedBrush}"
-                                           Text="{Binding SelectedGame.DownloadMessage}"/>
-                                <Button Style="{StaticResource BtnSmall}"
-                                        Content="Annulla download"
-                                        HorizontalAlignment="Left" Margin="0,10,0,0"
-                                        AutomationProperties.Name="Annulla download"
-                                        Command="{Binding CancelDownloadCommand}"
-                                        Visibility="{Binding SelectedGame.IsDownloading, Converter={StaticResource BoolToVis}}"/>
-                            </StackPanel>
-
-
-
-                            <!-- Installazione nel gioco: solo per le patch locali -->
-                            <StackPanel Visibility="{Binding SelectedGame.IsLocal, Converter={StaticResource BoolToVis}}">
-                                <Border Height="1" Margin="0,18,0,16" Background="{StaticResource LineSoftBrush}"/>
-
-                                <DockPanel Margin="0,0,0,8">
-                                    <Border DockPanel.Dock="Right" Padding="8,2" CornerRadius="999"
-                                            Background="#284644" VerticalAlignment="Center"
-                                            ToolTip="{Binding SelectedGame.InstalledFolder}"
-                                            Visibility="{Binding SelectedGame.IsInstalledInGame, Converter={StaticResource BoolToVis}}">
-                                        <TextBlock Text="NEL GIOCO" FontSize="9.5" FontWeight="SemiBold"
-                                                   Foreground="{StaticResource TealBrush}"/>
-                                    </Border>
-                                    <TextBlock Style="{StaticResource SectionHeading}" Text="INSTALLAZIONE"
-                                               Margin="0" VerticalAlignment="Center"/>
-                                </DockPanel>
-
-                                <TextBlock Text="Cartella del gioco in cui copiare i file della patch."
-                                           FontSize="11.5" Foreground="{StaticResource MutedBrush}"
-                                           TextWrapping="Wrap" Margin="0,0,0,8"/>
-
-                                <Border Padding="11,8" CornerRadius="9" Margin="0,0,0,8"
-                                        Background="{StaticResource SurfaceHiBrush}"
-                                        BorderBrush="{StaticResource LineSoftBrush}" BorderThickness="1"
-                                        ToolTip="{Binding SelectedGame.InstallFolder}"
-                                        Visibility="{Binding SelectedGame.HasInstallFolder, Converter={StaticResource BoolToVis}}">
-                                    <TextBlock Text="{Binding SelectedGame.InstallFolder}" FontSize="11.5"
-                                               Foreground="{StaticResource TextBrush}"
-                                               TextTrimming="CharacterEllipsis"/>
-                                </Border>
-
-                                <Border Padding="11,8" CornerRadius="9" Margin="0,0,0,8"
-                                        BorderBrush="{StaticResource LineSoftBrush}" BorderThickness="1"
-                                        Visibility="{Binding SelectedGame.HasInstallFolder, Converter={StaticResource InvBoolToVis}}">
-                                    <TextBlock Text="Nessuna cartella scelta." FontSize="11.5"
-                                               Foreground="{StaticResource AmberBrush}" TextWrapping="Wrap"/>
-                                </Border>
-
-                                <Button Style="{StaticResource BtnSmall}" HorizontalAlignment="Stretch"
-                                        Content="{Binding SelectedGame.InstallFolderButtonText}"
-                                        AutomationProperties.Name="Scegli la cartella del gioco"
-                                        Command="{Binding ChangeGameInstallFolderCommand}"
-                                        CommandParameter="{Binding SelectedGame}"/>
-
-                                <Button Style="{StaticResource BtnPrimary}" HorizontalAlignment="Stretch"
-                                        Margin="0,8,0,0"
-                                        Content="{Binding SelectedGame.InstallButtonText}"
-                                        AutomationProperties.Name="Installa nel gioco"
-                                        Command="{Binding InstallInGameCommand}"
+                            <!-- File -->
+                            <TextBlock Style="{StaticResource SectionHeading}" Text="FILE"/>
+                            <TextBlock Text="Controlla che il file scaricato sia quello pubblicato nel catalogo."
+                                       FontSize="12" Foreground="{StaticResource MutedBrush}"
+                                       Margin="0,0,0,10"
+                                       Visibility="{Binding SelectedGame.ShowsIntegrity, Converter={StaticResource InvBoolToVis}}"/>
+                            <TextBlock Text="{Binding SelectedGame.IntegrityMessage}" FontSize="12"
+                                       Margin="0,0,0,10"
+                                       Foreground="{Binding SelectedGame.IntegrityBrush}"
+                                       Visibility="{Binding SelectedGame.ShowsIntegrity, Converter={StaticResource BoolToVis}}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Style="{StaticResource BtnSmall}" HorizontalAlignment="Left"
+                                        Content="Verifica integrità"
+                                        AutomationProperties.Name="Verifica integrità del file"
+                                        Command="{Binding VerifyFileCommand}"
                                         CommandParameter="{Binding SelectedGame}"
-                                        IsEnabled="{Binding SelectedGame.CanInstallInGame}"/>
+                                        IsEnabled="{Binding SelectedGame.CanVerify}"/>
+                                <Button Style="{StaticResource BtnSmall}" Margin="8,0,0,0"
+                                        Content="Scarica solo lo zip"
+                                        AutomationProperties.Name="Scarica solo lo zip"
+                                        Command="{Binding DownloadCommand}"/>
+                            </StackPanel>
 
-                                <ProgressBar IsIndeterminate="True" Height="4" Margin="0,10,0,0"
+                            <!-- Installazione nel gioco -->
+                            <StackPanel Margin="0,26,0,0"
+                                        Visibility="{Binding SelectedGame.IsLocal, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Style="{StaticResource SectionHeading}" Text="INSTALLAZIONE"/>
+                                <TextBlock Text="Cartella del gioco in cui copiare i file della patch."
+                                           FontSize="12" Foreground="{StaticResource MutedBrush}"
+                                           Margin="0,0,0,10"/>
+
+                                <TextBlock Text="{Binding SelectedGame.InstalledFolder}" FontSize="11.5"
+                                           FontFamily="Cascadia Mono, Consolas"
+                                           Foreground="{StaticResource TealBrush}" Margin="0,0,0,8"
+                                           TextTrimming="CharacterEllipsis"
+                                           Visibility="{Binding SelectedGame.IsInstalledInGame, Converter={StaticResource BoolToVis}}"/>
+
+                                <TextBlock Text="{Binding SelectedGame.InstallFolder}" FontSize="11.5"
+                                           FontFamily="Cascadia Mono, Consolas"
+                                           Foreground="{StaticResource MutedBrush}" Margin="0,0,0,8"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip="{Binding SelectedGame.InstallFolder}"
+                                           Visibility="{Binding SelectedGame.HasInstallFolder, Converter={StaticResource BoolToVis}}"/>
+
+                                <TextBlock Text="Nessuna cartella scelta." FontSize="11.5"
+                                           Foreground="{StaticResource AmberBrush}" Margin="0,0,0,8"
+                                           Visibility="{Binding SelectedGame.HasInstallFolder, Converter={StaticResource InvBoolToVis}}"/>
+
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Style="{StaticResource BtnSmall}"
+                                            Content="{Binding SelectedGame.InstallFolderButtonText}"
+                                            AutomationProperties.Name="Scegli la cartella del gioco"
+                                            ToolTip="Scegli liberamente la cartella in cui copiare la patch"
+                                            Command="{Binding ChangeGameInstallFolderCommand}"
+                                            CommandParameter="{Binding SelectedGame}"/>
+                                    <Button Style="{StaticResource BtnSmall}" Margin="8,0,0,0"
+                                            Content="Ripristina file originali"
+                                            AutomationProperties.Name="Ripristina i file originali"
+                                            Command="{Binding RestoreInstallCommand}"
+                                            CommandParameter="{Binding SelectedGame}"
+                                            Visibility="{Binding SelectedGame.HasBackup, Converter={StaticResource BoolToVis}}"/>
+                                </StackPanel>
+
+                                <ProgressBar IsIndeterminate="True" Height="3" Margin="0,12,0,0"
                                              Visibility="{Binding SelectedGame.IsInstalling, Converter={StaticResource BoolToVis}}"/>
 
-                                <Button Style="{StaticResource BtnGhost}" HorizontalAlignment="Stretch"
-                                        Margin="0,8,0,0" Content="Ripristina file originali"
-                                        AutomationProperties.Name="Ripristina i file originali"
-                                        Command="{Binding RestoreInstallCommand}"
-                                        CommandParameter="{Binding SelectedGame}"
-                                        Visibility="{Binding SelectedGame.HasBackup, Converter={StaticResource BoolToVis}}"/>
-
-                                <TextBlock Margin="0,10,0,0" FontSize="11.5" TextWrapping="Wrap"
+                                <TextBlock Margin="0,10,0,0" FontSize="11.5"
                                            Foreground="{StaticResource TealBrush}"
                                            Text="{Binding SelectedGame.InstallMessage}"
                                            Visibility="{Binding SelectedGame.ShowsInstallMessage, Converter={StaticResource BoolToVis}}"/>
                             </StackPanel>
 
-                            <Border Height="1" Margin="0,18,0,16" Background="{StaticResource LineSoftBrush}"/>
-
-                            <!-- Integrità del file scaricato -->
-                            <TextBlock Style="{StaticResource SectionHeading}" Text="FILE"/>
-                            <TextBlock Text="Controlla che il file scaricato sia quello pubblicato nel catalogo."
-                                       FontSize="11.5" Foreground="{StaticResource MutedBrush}"
-                                       TextWrapping="Wrap" Margin="0,0,0,8"
-                                       Visibility="{Binding SelectedGame.ShowsIntegrity, Converter={StaticResource InvBoolToVis}}"/>
-                            <TextBlock Text="{Binding SelectedGame.IntegrityMessage}" FontSize="11.5"
-                                       TextWrapping="Wrap" Margin="0,0,0,8"
-                                       Foreground="{Binding SelectedGame.IntegrityBrush}"
-                                       Visibility="{Binding SelectedGame.ShowsIntegrity, Converter={StaticResource BoolToVis}}"/>
-                            <Button Style="{StaticResource BtnSmall}" HorizontalAlignment="Stretch"
-                                    Content="Verifica integrità"
-                                    AutomationProperties.Name="Verifica integrità del file"
-                                    Command="{Binding VerifyFileCommand}"
-                                    CommandParameter="{Binding SelectedGame}"
-                                    IsEnabled="{Binding SelectedGame.CanVerify}"/>
-
-                            <Border Height="1" Margin="0,18,0,16" Background="{StaticResource LineSoftBrush}"/>
-
-                            <TextBlock Style="{StaticResource SectionHeading}" Text="DOWNLOAD"/>
-                            <TextBlock Text="Dove viene salvata la patch scaricata."
-                                       FontSize="11.5" Foreground="{StaticResource MutedBrush}"
-                                       TextWrapping="Wrap" Margin="0,0,0,8"/>
+                            <!-- Cartella di download -->
+                            <TextBlock Style="{StaticResource SectionHeading}" Text="DOWNLOAD" Margin="0,26,0,10"/>
                             <TextBlock Text="{Binding SelectedGame.DownloadFolder}" FontSize="11.5"
-                                       Foreground="{StaticResource TextBrush}"
+                                       FontFamily="Cascadia Mono, Consolas"
+                                       Foreground="{StaticResource MutedBrush}"
                                        ToolTip="{Binding SelectedGame.DownloadFolder}"
                                        TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
                             <TextBlock Text="Personalizzata per questo gioco" FontSize="11"
-                                       Foreground="{StaticResource TealBrush}" Margin="0,0,0,8"
+                                       Foreground="{StaticResource TealBrush}" Margin="0,0,0,10"
                                        Visibility="{Binding SelectedGame.HasCustomFolder, Converter={StaticResource BoolToVis}}"/>
-                            <Button Style="{StaticResource BtnSmall}"
-                                    HorizontalAlignment="Stretch"
-                                    Content="Cambia per questo gioco"
-                                    AutomationProperties.Name="Cambia cartella per questo gioco"
-                                    Command="{Binding ChangeGameFolderCommand}"
-                                    CommandParameter="{Binding SelectedGame}"/>
-                            <Button Style="{StaticResource BtnSmall}"
-                                    HorizontalAlignment="Stretch" Margin="0,6,0,0"
-                                    Content="Usa cartella predefinita"
-                                    AutomationProperties.Name="Usa la cartella predefinita"
-                                    Command="{Binding ResetGameFolderCommand}"
-                                    CommandParameter="{Binding SelectedGame}"
-                                    Visibility="{Binding SelectedGame.HasCustomFolder, Converter={StaticResource BoolToVis}}"/>
-
-                            <Border Height="1" Margin="0,18,0,16" Background="{StaticResource LineSoftBrush}"/>
-
-                            <TextBlock Style="{StaticResource SectionHeading}" Text="DETTAGLI"/>
-                            <DockPanel Margin="0,0,0,9"
-                                       Visibility="{Binding SelectedGame.HasVersion, Converter={StaticResource BoolToVis}}">
-                                <TextBlock DockPanel.Dock="Right" FontSize="12.5"
-                                           Foreground="{StaticResource TextBrush}"
-                                           Text="{Binding SelectedGame.Version}"/>
-                                <TextBlock Text="Versione" FontSize="12.5"
-                                           Foreground="{StaticResource MutedBrush}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,9"
-                                       Visibility="{Binding SelectedGame.HasInstalledDate, Converter={StaticResource BoolToVis}}">
-                                <TextBlock DockPanel.Dock="Right" FontSize="12.5"
-                                           Foreground="{StaticResource TealBrush}"
-                                           Text="{Binding SelectedGame.InstalledDateLabel}"/>
-                                <TextBlock Text="Scaricata" FontSize="12.5"
-                                           Foreground="{StaticResource MutedBrush}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,9"
-                                       Visibility="{Binding SelectedGame.HasUpdatedDate, Converter={StaticResource BoolToVis}}">
-                                <TextBlock DockPanel.Dock="Right" FontSize="12.5"
-                                           Foreground="{StaticResource TextBrush}"
-                                           Text="{Binding SelectedGame.UpdatedLabel}"/>
-                                <TextBlock Text="Aggiornata" FontSize="12.5"
-                                           Foreground="{StaticResource MutedBrush}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,9"
-                                       Visibility="{Binding SelectedGame.HasTags, Converter={StaticResource BoolToVis}}">
-                                <TextBlock DockPanel.Dock="Right" FontSize="12.5" MaxWidth="170"
-                                           TextAlignment="Right" TextWrapping="Wrap"
-                                           Foreground="{StaticResource TextBrush}"
-                                           Text="{Binding SelectedGame.TagsLabel}"/>
-                                <TextBlock Text="Categorie" FontSize="12.5"
-                                           Foreground="{StaticResource MutedBrush}"/>
-                            </DockPanel>
-
+                            <StackPanel Orientation="Horizontal">
+                                <Button Style="{StaticResource BtnSmall}"
+                                        Content="Cambia per questo gioco"
+                                        AutomationProperties.Name="Cambia cartella per questo gioco"
+                                        Command="{Binding ChangeGameFolderCommand}"
+                                        CommandParameter="{Binding SelectedGame}"/>
+                                <Button Style="{StaticResource BtnSmall}" Margin="8,0,0,0"
+                                        Content="Usa cartella predefinita"
+                                        AutomationProperties.Name="Usa la cartella predefinita"
+                                        Command="{Binding ResetGameFolderCommand}"
+                                        CommandParameter="{Binding SelectedGame}"
+                                        Visibility="{Binding SelectedGame.HasCustomFolder, Converter={StaticResource BoolToVis}}"/>
+                            </StackPanel>
                         </StackPanel>
-                    </ScrollViewer>
-                </Border>
-            </Grid>
+                    </StackPanel>
+
+                    <!-- Colonna dettagli -->
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Style="{StaticResource SectionHeading}" Text="DETTAGLI"/>
+
+                        <Grid Margin="0,0,0,1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.ColumnSpan="2" Height="1" VerticalAlignment="Bottom"
+                                    Background="{StaticResource LineSoftBrush}"/>
+                            <TextBlock Text="Versione" FontSize="12" Foreground="{StaticResource MutedBrush}"
+                                       Margin="0,11,0,11"/>
+                            <TextBlock Grid.Column="1" Text="{Binding SelectedGame.Version}" FontSize="12"
+                                       HorizontalAlignment="Right" Margin="0,11,0,11"
+                                       Foreground="{StaticResource TextBrush}"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,1"
+                              Visibility="{Binding SelectedGame.HasInstalledDate, Converter={StaticResource BoolToVis}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.ColumnSpan="2" Height="1" VerticalAlignment="Bottom"
+                                    Background="{StaticResource LineSoftBrush}"/>
+                            <TextBlock Text="Scaricata" FontSize="12" Foreground="{StaticResource MutedBrush}"
+                                       Margin="0,11,0,11"/>
+                            <TextBlock Grid.Column="1" Text="{Binding SelectedGame.InstalledDateLabel}" FontSize="12"
+                                       HorizontalAlignment="Right" Margin="0,11,0,11"
+                                       Foreground="{StaticResource TealBrush}"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,1"
+                              Visibility="{Binding SelectedGame.HasUpdatedDate, Converter={StaticResource BoolToVis}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.ColumnSpan="2" Height="1" VerticalAlignment="Bottom"
+                                    Background="{StaticResource LineSoftBrush}"/>
+                            <TextBlock Text="Aggiornata" FontSize="12" Foreground="{StaticResource MutedBrush}"
+                                       Margin="0,11,0,11"/>
+                            <TextBlock Grid.Column="1" Text="{Binding SelectedGame.UpdatedLabel}" FontSize="12"
+                                       HorizontalAlignment="Right" Margin="0,11,0,11"
+                                       Foreground="{StaticResource TextBrush}"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,1"
+                              Visibility="{Binding SelectedGame.HasTags, Converter={StaticResource BoolToVis}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.ColumnSpan="2" Height="1" VerticalAlignment="Bottom"
+                                    Background="{StaticResource LineSoftBrush}"/>
+                            <TextBlock Text="Categorie" FontSize="12" Foreground="{StaticResource MutedBrush}"
+                                       Margin="0,11,0,11"/>
+                            <TextBlock Grid.Column="1" Text="{Binding SelectedGame.TagsLabel}" FontSize="12"
+                                       TextWrapping="Wrap" TextAlignment="Right" MaxWidth="210"
+                                       Margin="12,11,0,11"
+                                       Foreground="{StaticResource TextBrush}"/>
+                        </Grid>
+
+                        <!-- Avanzamento traduzione -->
+                        <StackPanel Margin="0,24,0,0"
+                                    Visibility="{Binding SelectedGame.ShowProgress, Converter={StaticResource BoolToVis}}">
+                            <DockPanel Margin="0,0,0,8">
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding SelectedGame.ProgressLabel}"
+                                           FontSize="11" Foreground="{StaticResource MutedSoftBrush}"/>
+                                <TextBlock Text="Avanzamento" FontSize="11"
+                                           Foreground="{StaticResource MutedBrush}"/>
+                            </DockPanel>
+                            <ProgressBar Value="{Binding SelectedGame.ProgressValue, Mode=OneWay}" Maximum="100"/>
+                        </StackPanel>
+
+                        <!-- Stato download del gioco -->
+                        <StackPanel Margin="0,22,0,0"
+                                    Visibility="{Binding SelectedGame.ShowsDownloadStatus, Converter={StaticResource BoolToVis}}">
+                            <ProgressBar Value="{Binding SelectedGame.DownloadPercent, Mode=OneWay}"
+                                         Maximum="100"
+                                         Foreground="{StaticResource AmberBrush}"/>
+                            <DockPanel Margin="0,8,0,0">
+                                <Button DockPanel.Dock="Right" Style="{StaticResource TextLink}"
+                                        Content="Annulla" Padding="0,2"
+                                        Margin="10,0,0,0" VerticalAlignment="Center"
+                                        AutomationProperties.Name="Annulla download"
+                                        Command="{Binding CancelDownloadCommand}"
+                                        Visibility="{Binding SelectedGame.IsDownloading, Converter={StaticResource BoolToVis}}"/>
+                                <TextBlock FontSize="11.5" VerticalAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Foreground="{StaticResource MutedBrush}"
+                                           Text="{Binding SelectedGame.DownloadMessage}"/>
+                            </DockPanel>
+                        </StackPanel>
+
+                        <TextBlock Margin="0,22,0,0" FontSize="11"
+                                   Foreground="{StaticResource MutedSoftBrush}"
+                                   TextWrapping="Wrap"
+                                   Text="Le patch sono traduzioni amatoriali: installale solo su copie di cui hai una copia di backup."/>
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </UserControl>

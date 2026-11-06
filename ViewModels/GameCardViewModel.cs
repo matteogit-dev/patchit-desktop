@@ -98,8 +98,11 @@ public sealed partial class GameCardViewModel : ObservableObject
         OnPropertyChanged(nameof(InstallFolderButtonText));
     }
 
-    partial void OnInstalledFolderChanged(string value) =>
+    partial void OnInstalledFolderChanged(string value)
+    {
         OnPropertyChanged(nameof(IsInstalledInGame));
+        RaiseCoverBadge();
+    }
 
     partial void OnInstallMessageChanged(string value) =>
         OnPropertyChanged(nameof(ShowsInstallMessage));
@@ -121,6 +124,44 @@ public sealed partial class GameCardViewModel : ObservableObject
 
     /// <summary>Scaricata e già allineata al catalogo: non c'è nulla da aggiornare.</summary>
     public bool IsUpToDate => IsDownloaded && !HasUpdate;
+
+    /// <summary>Un solo badge sulla copertina: la condizione più importante vince.</summary>
+    public string CoverBadgeText =>
+        HasUpdate ? "DA AGGIORNARE"
+        : IsInstalledInGame ? "NEL GIOCO"
+        : IsUpToDate ? "SCARICATA"
+        : "";
+
+    public bool ShowsCoverBadge => CoverBadgeText.Length > 0;
+
+    public Brush CoverBadgeForeground => HasUpdate ? Palette.Amber : Palette.Teal;
+
+    public Brush CoverBadgeBackground => HasUpdate ? Palette.AmberDim : Palette.TealDim;
+
+    /// <summary>Tutte le condizioni in chiaro, per il tooltip del badge.</summary>
+    public string CoverBadgeToolTip
+    {
+        get
+        {
+            var parts = new List<string>();
+
+            if (HasUpdate) parts.Add("Aggiornamento disponibile");
+            if (IsUpToDate) parts.Add("Patch scaricata");
+            if (IsInstalledInGame) parts.Add($"Installata in {InstalledFolder}");
+            if (DownloadStatus == DownloadState.Failed) parts.Add(DownloadMessage);
+
+            return string.Join("\n", parts);
+        }
+    }
+
+    private void RaiseCoverBadge()
+    {
+        OnPropertyChanged(nameof(CoverBadgeText));
+        OnPropertyChanged(nameof(ShowsCoverBadge));
+        OnPropertyChanged(nameof(CoverBadgeForeground));
+        OnPropertyChanged(nameof(CoverBadgeBackground));
+        OnPropertyChanged(nameof(CoverBadgeToolTip));
+    }
 
     public string InstalledDateLabel =>
         DateTime.TryParse(InstalledAt, out var parsed)
@@ -250,6 +291,7 @@ public sealed partial class GameCardViewModel : ObservableObject
         OnPropertyChanged(nameof(DownloadButtonText));
         OnPropertyChanged(nameof(IsUpToDate));
         OnPropertyChanged(nameof(CanInstallInGame));
+        RaiseCoverBadge();
     }
 
     partial void OnIsDownloadedChanged(bool value)
@@ -259,6 +301,7 @@ public sealed partial class GameCardViewModel : ObservableObject
         OnPropertyChanged(nameof(HasInstalledDate));
         OnPropertyChanged(nameof(CanInstallInGame));
         OnPropertyChanged(nameof(CanVerify));
+        RaiseCoverBadge();
     }
 
     partial void OnInstalledAtChanged(string value) =>

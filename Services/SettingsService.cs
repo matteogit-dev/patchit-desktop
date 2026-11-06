@@ -13,6 +13,9 @@ public sealed class SettingsService
 
     public string DownloadDirectory { get; private set; } = DefaultDirectory();
 
+    /// <summary>Dimensione delle card scelta dall'utente: "s", "m" o "l".</summary>
+    public string CardSize { get; private set; } = "m";
+
     public void Load()
     {
         try
@@ -23,6 +26,9 @@ public sealed class SettingsService
 
             if (!string.IsNullOrWhiteSpace(file?.DownloadDirectory))
                 DownloadDirectory = file.DownloadDirectory;
+
+            if (file?.CardSize is "s" or "m" or "l")
+                CardSize = file.CardSize;
 
             _gameDirectories.Clear();
 
@@ -47,6 +53,15 @@ public sealed class SettingsService
     public void Save(string downloadDirectory)
     {
         DownloadDirectory = downloadDirectory;
+        Persist();
+    }
+
+    public void SetCardSize(string size)
+    {
+        if (size is not ("s" or "m" or "l")) return;
+        if (CardSize == size) return;
+
+        CardSize = size;
         Persist();
     }
 
@@ -81,6 +96,7 @@ public sealed class SettingsService
             DownloadDirectory = DownloadDirectory,
             GameDirectories = _gameDirectories,
             GameInstallDirectories = _gameInstallDirectories,
+            CardSize = CardSize,
         };
 
         AtomicFile.WriteAllText(AppPaths.Settings, JsonSerializer.Serialize(file, JsonOptions));
