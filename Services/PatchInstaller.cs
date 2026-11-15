@@ -4,7 +4,8 @@ using System.Text.Json;
 
 namespace PatchIt.Client.Services;
 
-public sealed record InstallResult(int Files, int Replaced, string BackupDirectory);
+public sealed record InstallResult(
+    int Files, int Replaced, string BackupDirectory, string? RemovedBackup = null);
 
 /// <summary>
 /// Copia i file di una patch nella cartella del gioco. Prima di sovrascrivere
@@ -40,7 +41,8 @@ public sealed class PatchInstaller
         }
     }
 
-    public InstallResult Install(string zipPath, string destinationFolder, string gameId)
+    public InstallResult Install(
+        string zipPath, string destinationFolder, string gameId, string? existingBackup = null)
     {
         if (!CanExtract(zipPath))
             throw new InvalidOperationException("Il file scaricato non è uno zip valido.");
@@ -58,11 +60,31 @@ public sealed class PatchInstaller
         if (entries.Count == 0)
             throw new InvalidOperationException("Lo zip non contiene file da estrarre.");
 
-        var backupDirectory = Path.Combine(
-            BackupsRoot, SafeName(gameId), DateTime.Now.ToString("yyyyMMdd-HHmmss-fff"));
+        // Un backup già presente per la stessa cartella viene riusato: contiene i file
+        // originali, mentre quelli sul disco sono già stati modificati da una patch.
+        var reusable = TryLoadManifest(existingBackup, destinationFolder, out var reusedManifest);
+
+        var backupDirectory = reusable
+            ? existingBackup!
+            : Path.Combine(BackupsRoot, SafeName(gameId), DateTime.Now.ToString("yyyyMMdd-HHmmss-fff"));
+
+        // cartella del gioco cambiata: il backup vecchio non è più raggiungibile dal ripristino
+        var removedBackup =
+            !reusable && !string.IsNullOrWhiteSpace(existingBackup)
+            && Directory.Exists(existingBackup) && TryDeleteBackup(existingBackup)
+                ? existingBackup
+                : null;
+
         Directory.CreateDirectory(backupDirectory);
 
-        var manifest = new BackupManifest { Destination = destinationFolder };
+        var manifest = reusable
+            ? reusedManifest!
+            : new BackupManifest { Destination = destinationFolder };
+
+        var savedEarlier = manifest.Files
+            .Select(f => f.Path)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         var replaced = 0;
 
         foreach (var (_, relative) in entries)
@@ -70,7 +92,10 @@ public sealed class PatchInstaller
             TryResolve(destinationFolder, relative, out var full);
             var exists = File.Exists(full);
             if (exists) replaced++;
-            manifest.Files.Add(new BackupEntry { Path = relative, Existed = exists });
+
+            // l'originale di un file già salvato non va ricopiato: ora è la versione patchata
+            if (!savedEarlier.Contains(relative))
+                manifest.Files.Add(new BackupEntry { Path = relative, Existed = exists });
         }
 
         // il manifest si scrive prima dell'estrazione: se il processo si interrompe
@@ -86,7 +111,7 @@ public sealed class PatchInstaller
             var folder = Path.GetDirectoryName(full);
             if (!string.IsNullOrEmpty(folder)) Directory.CreateDirectory(folder);
 
-            if (File.Exists(full))
+            if (File.Exists(full) && !savedEarlier.Contains(relative))
             {
                 var backupFile = Path.Combine(backupDirectory, relative);
                 var backupFolder = Path.GetDirectoryName(backupFile);
@@ -97,7 +122,7 @@ public sealed class PatchInstaller
             entry.ExtractToFile(full, overwrite: true);
         }
 
-        return new InstallResult(entries.Count, replaced, backupDirectory);
+        return new InstallResult(entries.Count, replaced, backupDirectory, removedBackup);
     }
 
     /// <summary>Rimette i file com'erano e cancella il backup. Restituisce i file toccati.</summary>
@@ -137,6 +162,79 @@ public sealed class PatchInstaller
 
         Directory.Delete(backupDirectory, recursive: true);
         return touched;
+    }
+
+    /// <summary>Cancella un backup creato da noi. False se non è possibile o se il percorso è estraneo.</summary>
+    public static bool TryDeleteBackup(string? backupDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(backupDirectory)) return true;
+        if (!Directory.Exists(backupDirectory)) return true;
+        if (!IsBackupPath(backupDirectory)) return false;
+
+        try
+        {
+            Directory.Delete(backupDirectory, recursive: true);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Legge il manifest di un backup esistente, se vale per questa destinazione.</summary>
+    private static bool TryLoadManifest(
+        string? backupDirectory, string destination, out BackupManifest? manifest)
+    {
+        manifest = null;
+
+        if (string.IsNullOrWhiteSpace(backupDirectory) || !IsBackupPath(backupDirectory))
+            return false;
+
+        var manifestPath = Path.Combine(backupDirectory, "manifest.json");
+        if (!File.Exists(manifestPath)) return false;
+
+        try
+        {
+            manifest = JsonSerializer.Deserialize<BackupManifest>(File.ReadAllText(manifestPath));
+        }
+        catch
+        {
+            return false;
+        }
+
+        return manifest is not null && SamePath(manifest.Destination, destination);
+    }
+
+    /// <summary>Un backup si cancella solo se sta dentro la cartella dei backup dell'app.</summary>
+    private static bool IsBackupPath(string path)
+    {
+        try
+        {
+            var root = Path.GetFullPath(BackupsRoot);
+            if (!root.EndsWith(Path.DirectorySeparatorChar)) root += Path.DirectorySeparatorChar;
+
+            return Path.GetFullPath(path).StartsWith(root, StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool SamePath(string left, string right)
+    {
+        try
+        {
+            return string.Equals(
+                Path.GetFullPath(left).TrimEnd(Path.DirectorySeparatorChar),
+                Path.GetFullPath(right).TrimEnd(Path.DirectorySeparatorChar),
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     /// <summary>Vero se il percorso resta dentro la destinazione: uno zip può contenere "../".</summary>

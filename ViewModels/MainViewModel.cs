@@ -1158,7 +1158,7 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             var result = await Task.Run(() =>
-                new PatchInstaller().Install(card.LocalFilePath, card.InstallFolder, card.Id));
+                new PatchInstaller().Install(card.LocalFilePath, card.InstallFolder, card.Id, _library.Get(card.Id)?.BackupPath));
 
             _library.MarkInstalled(card.Id, card.InstallFolder, result.BackupDirectory);
             card.InstalledFolder = card.InstallFolder;
@@ -1166,6 +1166,10 @@ public sealed partial class MainViewModel : ObservableObject
             card.InstallMessage = result.Replaced > 0
                 ? $"{result.Files} file copiati, {result.Replaced} sostituiti (backup salvato)."
                 : $"{result.Files} file copiati nella cartella del gioco.";
+
+            // con una cartella diversa il backup vecchio non era più raggiungibile
+            if (result.RemovedBackup is { Length: > 0 })
+                card.InstallMessage += " Il backup della cartella precedente è stato rimosso.";
 
             Notify($"Patch installata in {card.InstallFolder}.");
         }
@@ -1449,6 +1453,9 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (card is null || !card.IsDownloaded) return;
 
+        var backup = _library.Get(card.Id)?.BackupPath ?? "";
+        var hasBackup = backup.Length > 0 && Directory.Exists(backup);
+
         var proceed = await AskAsync(new ConfirmRequest
         {
             Eyebrow = "LIBRERIA",
@@ -1456,6 +1463,9 @@ public sealed partial class MainViewModel : ObservableObject
             Message = $"\"{card.Title}\" esce dalla libreria e il file scaricato viene cancellato dal disco. La patch già copiata nel gioco non viene toccata.",
             DetailLabel = "FILE DA ELIMINARE",
             Detail = card.LocalFilePath,
+            Note = hasBackup
+                ? "Anche il backup dei file originali del gioco viene eliminato: il ripristino non sarà più possibile."
+                : "",
             ConfirmText = "Rimuovi",
         });
 
@@ -1464,10 +1474,13 @@ public sealed partial class MainViewModel : ObservableObject
         var path = card.LocalFilePath;
         _library.Remove(card.Id);
 
+        var backupDeleted = PatchInstaller.TryDeleteBackup(backup);
+
         card.IsDownloaded = false;
         card.HasUpdate = false;
         card.InstalledAt = "";
         card.LocalFilePath = "";
+        card.HasBackup = false;
         card.DownloadStatus = DownloadState.Idle;
         card.DownloadPercent = 0;
         card.DownloadMessage = "";
@@ -1481,6 +1494,8 @@ public sealed partial class MainViewModel : ObservableObject
 
         if (!deleted)
             ReportStatus("Voce rimossa, ma il file non è stato eliminato: è in uso o non hai i permessi.");
+        else if (!backupDeleted)
+            ReportStatus("Voce rimossa, ma il backup non è stato eliminato: è in uso o non hai i permessi.");
         else
             Notify($"\"{card.Title}\" eliminata dal disco.");
     }
